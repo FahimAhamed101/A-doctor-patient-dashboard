@@ -181,14 +181,15 @@ export default function DoctorSearch() {
               {/* Action Buttons */}
               <div className="space-y-2 space-x-4">
                 <Link href="/doctor/book">
-                  <button className="w-full bg-[#2E8BC9] text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200">
+                  <button className="w-full bg-[#2E8BC9] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#2E8BC9] transition-colors duration-200">
                   Book Now
                 </button>
                 </Link>
               
+               <Link href="/doctor/details">
                 <button className="w-full shadow-md text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200">
                   Details
-                </button>
+                </button></Link>
               </div>
             </div>
           </div>

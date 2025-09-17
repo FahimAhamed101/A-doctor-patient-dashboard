@@ -221,8 +221,8 @@ const MedicalInformationPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center md:p-4">
-      <div className="w-full max-w-2xl">
-        <Card>
+      <div className="w-full max-w-4xl flex justify-center bg-white">
+        <div className="p-6">
      
 
           {/* Main Form Card */}
@@ -271,7 +271,7 @@ const MedicalInformationPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Allergies Section */}
-            <div className="bg-white p-2 rounded-lg mb-6">
+            <div className="bg-white shadow-sm p-2 rounded-lg mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900">Allergies</h2>
                 <Dialog
@@ -356,7 +356,7 @@ const MedicalInformationPage = () => {
                               setNewAllergy({ name: "", severity: "" });
                               setAllergyModalOpen(false);
                             }}
-                            className="border border-text-secondary bg-white text-text-secondary hover:border-gray-400 font-medium"
+                            className="border border-text-secondary  text-text-secondary hover:border-gray-400 font-medium"
                           >
                             Cancel
                           </Button>
@@ -386,7 +386,7 @@ const MedicalInformationPage = () => {
                     <div
                       key={allergy.id}
                       className={`px-4 py-3 grid grid-cols-3 items-center ${
-                        index % 2 !== 0 ? "bg-[#F0F5FE]" : ""
+                        index % 2 !== 0 ? "bg-[#EDF4FA]" : ""
                       }`}
                     >
                       <div className="text-gray-900">{allergy.name}</div>
@@ -409,7 +409,7 @@ const MedicalInformationPage = () => {
             </div>
 
             {/* Current Medications Section */}
-            <div className="bg-white p-2 rounded-lg mb-6">
+            <div className="bg-white p-2 shadow-sm rounded-lg mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900">
                   Current Medications
@@ -482,7 +482,7 @@ const MedicalInformationPage = () => {
                               setNewMedication({ name: "", frequency: "" });
                               setMedicationModalOpen(false);
                             }}
-                            className="border border-text-secondary bg-white text-text-secondary hover:border-gray-400 font-medium"
+                            className="border border-text-secondary  text-text-secondary hover:border-gray-400 font-medium"
                           >
                             Cancel
                           </Button>
@@ -514,7 +514,7 @@ const MedicalInformationPage = () => {
                     <div
                       key={medication.id}
                       className={`px-4 py-3 grid grid-cols-3 items-center ${
-                        index % 2 !== 0 ? "bg-[#F0F5FE]" : ""
+                        index % 2 !== 0 ? "bg-[#EDF4FA]" : ""
                       }`}
                     >
                       <div className="text-gray-900">{medication.name}</div>
@@ -582,7 +582,7 @@ const MedicalInformationPage = () => {
                             setNewCondition("");
                             setConditionModalOpen(false);
                           }}
-                          className="border border-text-secondary bg-white text-text-secondary hover:border-gray-400 font-medium"
+                          className="border border-text-secondary  text-text-secondary hover:border-gray-400 font-medium"
                         >
                           Cancel
                         </Button>
@@ -718,7 +718,7 @@ const MedicalInformationPage = () => {
               </Link>
             </div>
           </form>
-        </Card>
+        </div>
       </div>
     </div>
   );

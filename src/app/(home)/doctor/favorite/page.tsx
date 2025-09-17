@@ -124,7 +124,7 @@ export default function Component() {
 
         {/* Book Appointment Button */}
         <div className="p-6 pt-0">
-          <button className="w-full py-2 px-4 bg-[#2E8BC9] hover:bg-blue-700 text-white font-medium rounded-md transition-colors">
+          <button className="w-full py-2 px-4 bg-[#2E8BC9] hover:bg-[#2E8BC9] text-white font-medium rounded-md transition-colors">
             Book Appointment
           </button>
         </div>

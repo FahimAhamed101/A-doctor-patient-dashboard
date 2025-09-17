@@ -341,7 +341,7 @@ export default function DoctorAppointmentBooking() {
             Waitlist
           </button>
          
-          <button className="flex-1 py-3 px-4 bg-[#2E8BC9] text-white rounded-xl font-medium hover:bg-blue-600 transition-colors">
+          <button className="flex-1 py-3 px-4 bg-[#2E8BC9] text-white rounded-xl font-medium  transition-colors">
             <Link href="/doctor/book-report">Next</Link>
           </button>
         </div>

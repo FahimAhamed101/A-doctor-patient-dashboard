@@ -235,7 +235,7 @@ export default function AppointmentForm() {
       <Link href="/doctor/book-overview">
         <button
         type="button"
-        className="w-full bg-[#2E8BC9] hover:bg-blue-700 text-white h-12 text-sm font-medium rounded-lg px-4 py-2"
+        className="w-full bg-[#2E8BC9] hover:bg-[#2E8BC9] text-white h-12 text-sm font-medium rounded-lg px-4 py-2"
       >
         View Overview
       </button>

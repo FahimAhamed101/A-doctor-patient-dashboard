@@ -275,7 +275,7 @@ const HomePage = () => {
 
               {/* Action Buttons */}
               <div className="space-y-2 space-x-4">
-                <button className="w-full bg-[#2E8BC9] text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors duration-200">
+                <button className="w-full bg-[#2E8BC9] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#2E8BC9] transition-colors duration-200">
                   Book Now
                 </button>
                 <button className="w-full shadow-md text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200">

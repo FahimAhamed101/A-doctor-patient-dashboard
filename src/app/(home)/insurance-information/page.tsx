@@ -211,120 +211,124 @@ const MedicalInformationPage = () => {
             </div>
 
             {/* Insurance Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {insuranceData.map((insurance, index) => (
-                <div key={insurance.id} className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">Insurance Name</p>
-                        <p className="text-sm font-medium text-gray-900">{insurance.insuranceName}</p>
-                      </div>
-                      <button 
-                        onClick={() => handleDelete(insurance.id)}
-                        className="text-red-500 hover:text-red-600 p-1"
-                      >
-                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g filter="url(#filter0_d_4930_26854)">
-<rect x="4" y="1" width="40" height="40" rx="8" fill="#FEF2F2"/>
-<path d="M31.5 14.5L30.8803 24.5251C30.7219 27.0864 30.6428 28.3671 30.0008 29.2879C29.6833 29.7431 29.2747 30.1273 28.8007 30.416C27.8421 31 26.559 31 23.9927 31C21.4231 31 20.1383 31 19.179 30.4149C18.7048 30.1257 18.296 29.7408 17.9787 29.2848C17.3369 28.3626 17.2594 27.0801 17.1046 24.5152L16.5 14.5" stroke="#B42121" stroke-width="1.5" stroke-linecap="round"/>
-<path d="M15 14.5H33M28.0557 14.5L27.3731 13.0917C26.9196 12.1563 26.6928 11.6885 26.3017 11.3968C26.215 11.3321 26.1231 11.2745 26.027 11.2247C25.5939 11 25.0741 11 24.0345 11C22.9688 11 22.436 11 21.9957 11.2341C21.8981 11.286 21.805 11.3459 21.7173 11.4132C21.3216 11.7167 21.1006 12.2015 20.6586 13.1713L20.0529 14.5" stroke="#B42121" stroke-width="1.5" stroke-linecap="round"/>
-<path d="M21.5 25.5V19.5" stroke="#B42121" stroke-width="1.5" stroke-linecap="round"/>
-<path d="M26.5 25.5V19.5" stroke="#B42121" stroke-width="1.5" stroke-linecap="round"/>
-</g>
-<defs>
-<filter id="filter0_d_4930_26854" x="0" y="0" width="48" height="48" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-<feFlood flood-opacity="0" result="BackgroundImageFix"/>
-<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-<feOffset dy="3"/>
-<feGaussianBlur stdDeviation="2"/>
-<feComposite in2="hardAlpha" operator="out"/>
-<feColorMatrix type="matrix" values="0 0 0 0 0.101961 0 0 0 0 0.25098 0 0 0 0 0.376471 0 0 0 0.1 0"/>
-<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_4930_26854"/>
-<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_4930_26854" result="shape"/>
-</filter>
-</defs>
-</svg>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+  {insuranceData.map((insurance, index) => (
+    <div key={insurance.id} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="space-y-6">
+        {/* Header with insurance name and delete button */}
+        <div className="flex justify-between items-start pb-4 border-b border-gray-100">
+          <div>
+            <p className="text-xs text-gray-500 mb-2">Insurance Name</p>
+            <p className="text-lg font-semibold text-gray-900">{insurance.insuranceName}</p>
+          </div>
+          <button 
+            onClick={() => handleDelete(insurance.id)}
+            className="text-red-500 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors duration-200"
+          >
+            <svg width="50" height="50" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M31.5 14.5L30.8803 24.5251C30.7219 27.0864 30.6428 28.3671 30.0008 29.2879C29.6833 29.7431 29.2747 30.1273 28.8007 30.416C27.8421 31 26.559 31 23.9927 31C21.4231 31 20.1383 31 19.179 30.4149C18.7048 30.1257 18.296 29.7408 17.9787 29.2848C17.3369 28.3626 17.2594 27.0801 17.1046 24.5152L16.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M15 14.5H33M28.0557 14.5L27.3731 13.0917C26.9196 12.1563 26.6928 11.6885 26.3017 11.3968C26.215 11.3321 26.1231 11.2745 26.027 11.2247C25.5939 11 25.0741 11 24.0345 11C22.9688 11 22.436 11 21.9957 11.2341C21.8981 11.286 21.805 11.3459 21.7173 11.4132C21.3216 11.7167 21.1006 12.2015 20.6586 13.1713L20.0529 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M21.5 25.5V19.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M26.5 25.5V19.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
 
-                      </button>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div>
-                        <p className="text-xs text-gray-500">Contract ID</p>
-                        <p className="text-sm text-gray-900">{insurance.contractId}</p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-500">Group Number</p>
-                        <p className="text-sm text-gray-900">{insurance.groupNumber}</p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-500">Expiration Date</p>
-                        <p className="text-sm text-gray-900">{insurance.expirationDate}</p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-500">Patient Relationship to Policy Holder</p>
-                        <p className="text-sm text-gray-900">{insurance.relationship}</p>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <p className="text-xs text-gray-500">First Name</p>
-                          <p className="text-sm text-gray-900">{insurance.firstName}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Middle Name</p>
-                          <p className="text-sm text-gray-900">{insurance.middleName}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Last Name</p>
-                          <p className="text-sm text-gray-900">{insurance.lastName}</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-500">Contact ID</p>
-                        <p className="text-sm text-gray-900">{insurance.contactId}</p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-500">Address Line 1</p>
-                        <p className="text-sm text-gray-900">{insurance.addressLine1}</p>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2">
-                        <div>
-                          <p className="text-xs text-gray-500">City</p>
-                          <p className="text-sm text-gray-900">{insurance.city}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">State</p>
-                          <p className="text-sm text-gray-900">{insurance.state}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">ZIP</p>
-                          <p className="text-sm text-gray-900">{insurance.zip}</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-500">Employer Name</p>
-                        <p className="text-sm text-gray-900">{insurance.employerName}</p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-gray-500">Sex</p>
-                        <p className="text-sm text-gray-900">{insurance.sex}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        {/* Insurance details */}
+        <div className="space-y-5">
+          {/* Contract and Group Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-1">Contract ID</p>
+              <p className="text-sm text-gray-900">{insurance.contractId}</p>
             </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-1">Group Number</p>
+              <p className="text-sm text-gray-900">{insurance.groupNumber}</p>
+            </div>
+          </div>
 
+          {/* Expiration and Relationship */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-1">Expiration Date</p>
+              <p className="text-sm text-gray-900">{insurance.expirationDate}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500 mb-1">Relationship</p>
+              <p className="text-sm text-gray-900">{insurance.relationship}</p>
+            </div>
+          </div>
+
+          {/* Policy Holder Name */}
+          <div>
+            <p className="text-xs font-medium text-gray-500 mb-2">Policy Holder Name</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-xs text-gray-400 mb-1">First</p>
+                <p className="text-sm text-gray-900">{insurance.firstName}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Middle</p>
+                <p className="text-sm text-gray-900">{insurance.middleName || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Last</p>
+                <p className="text-sm text-gray-900">{insurance.lastName}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="pt-4 border-t border-gray-100">
+            <p className="text-xs font-medium text-gray-500 mb-3">Contact Information</p>
+            
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Contact ID</p>
+                <p className="text-sm text-gray-900">{insurance.contactId}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Address</p>
+                <p className="text-sm text-gray-900">{insurance.addressLine1}</p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">City</p>
+                  <p className="text-sm text-gray-900">{insurance.city}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">State</p>
+                  <p className="text-sm text-gray-900">{insurance.state}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">ZIP</p>
+                  <p className="text-sm text-gray-900">{insurance.zip}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Information */}
+          <div className="pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-1">Employer</p>
+                <p className="text-sm text-gray-900">{insurance.employerName}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-1">Sex</p>
+                <p className="text-sm text-gray-900">{insurance.sex}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
             
           </div>
         </div>

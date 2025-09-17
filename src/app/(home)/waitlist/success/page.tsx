@@ -1,14 +1,16 @@
 "use client"
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 
 export default function BookingConfirmation() {
-
+const route = useRouter();
 const [showPopup, setShowPopup] = useState(false);
 
   const handleBackToHome = () => {
     setShowPopup(true);
+    route.push("/home")
   };
 
   const closePopup = () => {

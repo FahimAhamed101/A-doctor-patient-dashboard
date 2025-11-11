@@ -2,19 +2,39 @@
 
 import { CheckCircle2, XCircle } from 'lucide-react';
 
-interface Appointment {
-  id: number;
+export interface Appointment {
+  id: string; // Change from number to string
   time: string;
   doctor: string;
   status: string;
   isHighlighted: boolean;
+  doctorName: string;
+  specialty: string;
+  healthCenter: string;
+  lastAppointmentDate: string;
+  lastAppointmentTime: string;
+  visitReason: string;
+  visitType: string;
+  insurance: string;
+  summary: string;
+  currentMedications: Array<{
+    name: string;
+    dosage: string;
+    _id: string;
+  }>;
+  priorDiagnoses: string[];
+  documents: Array<{
+    fileName: string;
+    url: string;
+    mimeType: string;
+    sizeBytes: number;
+  }>;
 }
 
 interface AppointmentCardProps {
   appointment: Appointment;
   onViewDetails: () => void;
 }
-
   const getStatusClasses = (status: string) => {
     switch (status) {
       case "Upcoming":

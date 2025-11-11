@@ -38,7 +38,7 @@ export default function DashboardLayout({
           <header className="  px-6 py-4">
             <div className="flex items-center justify-between">
               {/* Back Button */}
-              <Link href="/dashboard">
+              <Link href="/">
                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors hidden md:block">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M4 6V18" stroke="#3D3D3D" strokeWidth="1.5" strokeLinecap="round"/>

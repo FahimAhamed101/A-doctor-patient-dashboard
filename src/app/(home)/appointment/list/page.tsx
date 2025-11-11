@@ -137,17 +137,7 @@ export default function AppointmentDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-4">
      <div className="mt-6 space-y-4">
-              {activeTab === "appointment" && (
-            <div className="mt-6 space-y-4">
-              {appointments.map((appointment) => (
-                <AppointmentCard 
-                  key={appointment.id} 
-                  appointment={appointment}
-                  onViewDetails={() => handleViewDetails(appointment.id)}
-                />
-              ))}
-            </div>
-          )}
+           
 
           {activeTab === "details" && appointment && (
              <div key={appointment.doctorName + appointment.lastAppointmentDate} className="bg-white shadow-sm border border-gray-200 rounded-lg">

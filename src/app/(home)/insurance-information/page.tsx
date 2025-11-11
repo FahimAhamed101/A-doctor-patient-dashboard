@@ -2,33 +2,25 @@
 
 import React, { useState } from "react";
 import { User, Eye, Edit, Trash2 } from "lucide-react";
-import { useInsurance } from "./InsuranceContext";
 import Button from "@/components/UI/Button";
 import Link from "next/link";
-
-import { InsuranceProvider } from "./InsuranceContext";
-
-interface InsuranceCard {
-  id: string;
-  insuranceProvider: string;
-  policyNumber: string;
-  groupNumber: string;
-  phone: string;
-  effectiveDate: string;
-  expirationDate: string;
-  deductible: string;
-  cardImage?: string;
-}
+import { 
+  useGetInsuranceQuery,
+  useDeleteInsuranceMutation
+} from "@/redux/features/insurance/insuranceApi";
 
 const MedicalInformationPage = () => {
-  const { insuranceCards, deleteInsuranceCard } = useInsurance();
+  const { data: insuranceResponse, isLoading, error } = useGetInsuranceQuery();
+  const [deleteInsurance, { isLoading: isDeleting }] = useDeleteInsuranceMutation();
+
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this insurance card?")) {
       setDeletingId(id);
       try {
-        deleteInsuranceCard(id);
+        await deleteInsurance(id).unwrap();
+        alert("Insurance card deleted successfully!");
       } catch (error) {
         console.error("Error deleting insurance card:", error);
         alert("Error deleting insurance card. Please try again.");
@@ -44,95 +36,28 @@ const MedicalInformationPage = () => {
     return date.toLocaleDateString();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle final form submission
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">Loading insurance information...</div>
+      </div>
+    );
+  }
 
-  // Sample insurance data for 4 cards
-  const insuranceData = [
-    {
-      id: "1",
-      insuranceName: "Bluesky",
-      contractId: "0987654321",
-      groupNumber: "H123456789",
-      expirationDate: "31/12/2025",
-      relationship: "Father",
-      firstName: "Kamal",
-      middleName: "Ahmed",
-      lastName: "Dune",
-      contactId: "0987654321",
-      addressLine1: "123 Main St",
-      city: "Manhattan",
-      state: "NYC",
-      zip: "00076",
-      employerName: "Mahmudcompany",
-      sex: "Male",
-      dateOfBirth: "31/12/2006",
-    },
-    {
-      id: "2",
-      insuranceName: "Aetna",
-      contractId: "1234567890",
-      groupNumber: "G987654321",
-      expirationDate: "15/06/2024",
-      relationship: "Self",
-      firstName: "Sarah",
-      middleName: "Marie",
-      lastName: "Johnson",
-      contactId: "1234567890",
-      addressLine1: "456 Oak Ave",
-      city: "Brooklyn",
-      state: "NY",
-      zip: "11201",
-      employerName: "TechCorp",
-      sex: "Female",
-      dateOfBirth: "15/03/1985",
-    },
-    {
-      id: "3",
-      insuranceName: "Cigna",
-      contractId: "5555555555",
-      groupNumber: "C333333333",
-      expirationDate: "30/09/2024",
-      relationship: "Spouse",
-      firstName: "Michael",
-      middleName: "James",
-      lastName: "Brown",
-      contactId: "5555555555",
-      addressLine1: "789 Pine St",
-      city: "Queens",
-      state: "NY",
-      zip: "11354",
-      employerName: "FinanceInc",
-      sex: "Male",
-      dateOfBirth: "22/07/1982",
-    },
-    {
-      id: "4",
-      insuranceName: "UnitedHealthcare",
-      contractId: "7777777777",
-      groupNumber: "U444444444",
-      expirationDate: "20/03/2025",
-      relationship: "Child",
-      firstName: "Emily",
-      middleName: "Rose",
-      lastName: "Wilson",
-      contactId: "7777777777",
-      addressLine1: "321 Elm Blvd",
-      city: "Bronx",
-      state: "NY",
-      zip: "10458",
-      employerName: "School District",
-      sex: "Female",
-      dateOfBirth: "10/11/2010",
-    }
-  ];
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-red-600">Error loading insurance information</div>
+      </div>
+    );
+  }
+
+  const insuranceData = insuranceResponse?.data || [];
 
   return (
     <div className="min-h-screen ">
       <div className="flex justify-center md:p-4">
-        <div className="w-full "> {/* Increased max-width for grid layout */}
+        <div className="w-full ">
           <div>
             {/* Header */}
             <div className="mb-8">
@@ -178,158 +103,158 @@ const MedicalInformationPage = () => {
 
             {/* Add New Card Button */}
             <div className="mb-8">
-              <Link href="/insurance-info/add-new">
-                {insuranceCards.length === 0 ? (
-                  <div>
-                    <Link href="/insurance-information/insurenceform">
-                      <Button className="w-full px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-action-hover transition-colors font-medium">
+              {insuranceData.length === 0 ? (
+                <div>
+                  <Link href="/insurance-information/insurenceform">
+                    <Button className="w-full px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-action-hover transition-colors font-medium">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 4V20" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M4 12H20" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Add Primary Card
+                    </Button>
+                  </Link>
+                  <div className="w-full flex justify-center mt-4">
+                    <Link href="/insurance-information/insurenceform" className="w-full">
+                      <button className="w-full flex items-center bg-primary-500 justify-center gap-2 border border-primary-500 px-6 py-3 text-[#2E8BC9] rounded-lg hover:bg-action-hover font-medium">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 4V20" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-                          <path d="M4 12H20" stroke="white" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 4V20" stroke="#2E8BC9" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M4 12H20" stroke="#2E8BC9" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
-                        Add Primary Card
-                      </Button>
+                        <span>Add Other Card</span>
+                      </button>
                     </Link>
-                    <div className="w-full flex justify-center mt-4">
-                      <Link href="/insurance-information/insurenceform" className="w-full">
-                        <button className="w-full flex items-center justify-center gap-2 border border-primary-500 px-6 py-3 text-[#2E8BC9] rounded-lg hover:bg-action-hover font-medium">
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 4V20" stroke="#2E8BC9" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M4 12H20" stroke="#2E8BC9" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          <span>Add Other Card</span>
-                        </button>
-                      </Link>
-                    </div>
                   </div>
-                ) : (
-                  <Button className="w-full border border-primary-500 px-6 py-3 bg-white text-primary-500 rounded-lg hover:bg-action-hover transition-colors font-medium hover:text-white">
+                </div>
+              ) : (
+                <Link href="/insurance-information/insurenceform">
+                  <Button className="w-full border bg-primary-500 border-primary-500 px-6 py-3  text-primary-500 rounded-lg hover:bg-action-hover transition-colors font-medium hover:text-white">
                     + Add Other Card
                   </Button>
-                )}
-              </Link>
+                </Link>
+              )}
             </div>
 
             {/* Insurance Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-  {insuranceData.map((insurance, index) => (
-    <div key={insurance.id} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
-      <div className="space-y-6">
-        {/* Header with insurance name and delete button */}
-        <div className="flex justify-between items-start pb-4 border-b border-gray-100">
-          <div>
-            <p className="text-xs text-gray-500 mb-2">Insurance Name</p>
-            <p className="text-lg font-semibold text-gray-900">{insurance.insuranceName}</p>
-          </div>
-          <button 
-            onClick={() => handleDelete(insurance.id)}
-            className="text-red-500 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors duration-200"
-          >
-            <svg width="50" height="50" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M31.5 14.5L30.8803 24.5251C30.7219 27.0864 30.6428 28.3671 30.0008 29.2879C29.6833 29.7431 29.2747 30.1273 28.8007 30.416C27.8421 31 26.559 31 23.9927 31C21.4231 31 20.1383 31 19.179 30.4149C18.7048 30.1257 18.296 29.7408 17.9787 29.2848C17.3369 28.3626 17.2594 27.0801 17.1046 24.5152L16.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M15 14.5H33M28.0557 14.5L27.3731 13.0917C26.9196 12.1563 26.6928 11.6885 26.3017 11.3968C26.215 11.3321 26.1231 11.2745 26.027 11.2247C25.5939 11 25.0741 11 24.0345 11C22.9688 11 22.436 11 21.9957 11.2341C21.8981 11.286 21.805 11.3459 21.7173 11.4132C21.3216 11.7167 21.1006 12.2015 20.6586 13.1713L20.0529 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M21.5 25.5V19.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M26.5 25.5V19.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </button>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {insuranceData.map((insurance, index) => (
+                <div key={insurance._id} className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                  <div className="space-y-6">
+                    {/* Header with insurance name and delete button */}
+                    <div className="flex justify-between items-start pb-4 border-b border-gray-100">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Insurance Name</p>
+                        <p className="text-lg font-semibold text-gray-900">{insurance.insuranceName}</p>
+                      </div>
+                      <button 
+                        onClick={() => handleDelete(insurance.contractId)}
+                        disabled={isDeleting && deletingId === insurance.contractId}
+                        className="text-red-500 hover:text-red-600 p-2 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                      >
+                        <svg width="50" height="50" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M31.5 14.5L30.8803 24.5251C30.7219 27.0864 30.6428 28.3671 30.0008 29.2879C29.6833 29.7431 29.2747 30.1273 28.8007 30.416C27.8421 31 26.559 31 23.9927 31C21.4231 31 20.1383 31 19.179 30.4149C18.7048 30.1257 18.296 29.7408 17.9787 29.2848C17.3369 28.3626 17.2594 27.0801 17.1046 24.5152L16.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          <path d="M15 14.5H33M28.0557 14.5L27.3731 13.0917C26.9196 12.1563 26.6928 11.6885 26.3017 11.3968C26.215 11.3321 26.1231 11.2745 26.027 11.2247C25.5939 11 25.0741 11 24.0345 11C22.9688 11 22.436 11 21.9957 11.2341C21.8981 11.286 21.805 11.3459 21.7173 11.4132C21.3216 11.7167 21.1006 12.2015 20.6586 13.1713L20.0529 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          <path d="M21.5 25.5V19.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                          <path d="M26.5 25.5V19.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                      </button>
+                    </div>
 
-        {/* Insurance details */}
-        <div className="space-y-5">
-          {/* Contract and Group Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Contract ID</p>
-              <p className="text-sm text-gray-900">{insurance.contractId}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Group Number</p>
-              <p className="text-sm text-gray-900">{insurance.groupNumber}</p>
-            </div>
-          </div>
+                    {/* Insurance details */}
+                    <div className="space-y-5">
+                      {/* Contract and Group Info */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Contract ID</p>
+                          <p className="text-sm text-gray-900">{insurance.contractId}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Group Number</p>
+                          <p className="text-sm text-gray-900">{insurance.groupNumber}</p>
+                        </div>
+                      </div>
 
-          {/* Expiration and Relationship */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Expiration Date</p>
-              <p className="text-sm text-gray-900">{insurance.expirationDate}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">Relationship</p>
-              <p className="text-sm text-gray-900">{insurance.relationship}</p>
-            </div>
-          </div>
+                      {/* Expiration and Relationship */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Expiration Date</p>
+                          <p className="text-sm text-gray-900">31/12/2025</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 mb-1">Relationship</p>
+                          <p className="text-sm text-gray-900">{insurance.patientRelationship}</p>
+                        </div>
+                      </div>
 
-          {/* Policy Holder Name */}
-          <div>
-            <p className="text-xs font-medium text-gray-500 mb-2">Policy Holder Name</p>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <p className="text-xs text-gray-400 mb-1">First</p>
-                <p className="text-sm text-gray-900">{insurance.firstName}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Middle</p>
-                <p className="text-sm text-gray-900">{insurance.middleName || '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Last</p>
-                <p className="text-sm text-gray-900">{insurance.lastName}</p>
-              </div>
-            </div>
-          </div>
+                      {/* Policy Holder Name */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-500 mb-2">Policy Holder Name</p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">First</p>
+                            <p className="text-sm text-gray-900">{insurance.subscriber.firstName}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Middle</p>
+                            <p className="text-sm text-gray-900">—</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Last</p>
+                            <p className="text-sm text-gray-900">{insurance.subscriber.lastName}</p>
+                          </div>
+                        </div>
+                      </div>
 
-          {/* Contact Information */}
-          <div className="pt-4 border-t border-gray-100">
-            <p className="text-xs font-medium text-gray-500 mb-3">Contact Information</p>
-            
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Contact ID</p>
-                <p className="text-sm text-gray-900">{insurance.contactId}</p>
-              </div>
+                      {/* Contact Information */}
+                      <div className="pt-4 border-t border-gray-100">
+                        <p className="text-xs font-medium text-gray-500 mb-3">Contact Information</p>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Contact ID</p>
+                            <p className="text-sm text-gray-900">{insurance.contractId}</p>
+                          </div>
 
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Address</p>
-                <p className="text-sm text-gray-900">{insurance.addressLine1}</p>
-              </div>
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">Address</p>
+                            <p className="text-sm text-gray-900">{insurance.subscriber.address.line1}</p>
+                          </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">City</p>
-                  <p className="text-sm text-gray-900">{insurance.city}</p>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <p className="text-xs text-gray-400 mb-1">City</p>
+                              <p className="text-sm text-gray-900">{insurance.subscriber.address.city}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400 mb-1">State</p>
+                              <p className="text-sm text-gray-900">{insurance.subscriber.address.state}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400 mb-1">ZIP</p>
+                              <p className="text-sm text-gray-900">{insurance.subscriber.address.zip}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Additional Information */}
+                      <div className="pt-4 border-t border-gray-100">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Employer</p>
+                            <p className="text-sm text-gray-900">{insurance.subscriber.employerName}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Sex</p>
+                            <p className="text-sm text-gray-900">{insurance.subscriber.sex}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">State</p>
-                  <p className="text-sm text-gray-900">{insurance.state}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">ZIP</p>
-                  <p className="text-sm text-gray-900">{insurance.zip}</p>
-                </div>
-              </div>
+              ))}
             </div>
-          </div>
-
-          {/* Additional Information */}
-          <div className="pt-4 border-t border-gray-100">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Employer</p>
-                <p className="text-sm text-gray-900">{insurance.employerName}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">Sex</p>
-                <p className="text-sm text-gray-900">{insurance.sex}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  ))}
-</div>
-            
           </div>
         </div>
       </div>

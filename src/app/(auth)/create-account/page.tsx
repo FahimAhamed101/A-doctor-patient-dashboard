@@ -7,12 +7,15 @@ import Logo from "@/assets/logo";
 import Input from "@/components/UI/Input";
 import GoogleSignInButton from "@/components/UI/GoogleSignInButton";
 import Button from "@/components/UI/Button";
+import { useRegisterMutation } from "@/redux/features/auth/authApi";
+
+interface RegisterRequest {
+  email: string;
+  password: string;
+  authProvider: string;
+}
 
 const CreateAccountPage = () => {
-  const [currentStep, setCurrentStep] = useState<"role" | "form">("role");
-  const [selectedRole, setSelectedRole] = useState<"patient" | "doctor" | null>(
-    null
-  );
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +26,7 @@ const CreateAccountPage = () => {
   });
 
   const router = useRouter();
+  const [register, { isLoading: isRegistering }] = useRegisterMutation();
 
   const passwordRules = [
     { rule: "At least 8 characters", test: (pwd: string) => pwd.length >= 8 },
@@ -35,30 +39,23 @@ const CreateAccountPage = () => {
     password: "",
   });
 
-  const handleRoleSelect = (role: "patient" | "doctor") => {
-    setSelectedRole(role);
-  };
-
-  const handleRoleNext = () => {
-    if (selectedRole) {
-      setCurrentStep("form");
-    }
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
-    setErrors((prev) => ({ ...prev, [name]: "" })); // Clear errors on input change
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const validateForm = () => {
     let isValid = true;
-    let newErrors = { email: "", password: "" };
+    let newErrors = {
+      email: "",
+      password: "",
+    };
 
-    // Email Validation: check if email is required and has a valid format
+    // Email validation
     if (!formData.email) {
       newErrors.email = "Email is required";
       isValid = false;
@@ -67,9 +64,12 @@ const CreateAccountPage = () => {
       isValid = false;
     }
 
-    // Password Validation: check if password is required
+    // Password validation
     if (!formData.password) {
       newErrors.password = "Password is required";
+      isValid = false;
+    } else if (!isPasswordValid) {
+      newErrors.password = "Password does not meet requirements";
       isValid = false;
     }
 
@@ -77,23 +77,58 @@ const CreateAccountPage = () => {
     return isValid;
   };
 
-  const handleSubmit = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
-    if (validateForm()) {
-      // Handle signup logic here if form is valid
-      console.log("Login attempt:", formData);
-      // Handle registration logic here with selected role
-      console.log("Registration attempt:", { ...formData, role: selectedRole });
+    if (!validateForm()) {
+      setIsLoading(false);
+      return;
+    }
 
-      // Navigate to verify-code page with flow parameter
-      router.push(
-        `/verify-code?flow=create-account&email=${encodeURIComponent(
-          formData.email
-        )}&role=${selectedRole}`
-      );
-    } else setIsLoading(false);
+    if (!doPasswordsMatch) {
+      setErrors(prev => ({ ...prev, password: "Passwords do not match" }));
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const registerData: RegisterRequest = {
+        email: formData.email,
+        password: formData.password,
+        authProvider: "email", // Always set to "email" for email registration
+      };
+
+      const result = await register(registerData).unwrap();
+      
+      console.log("Registration successful:", result);
+      
+      // Navigate to verify-code page
+     router.push(
+      `/verify-code?flow=create-account&email=${encodeURIComponent(
+        formData.email
+      )}`
+   );
+    
+    } catch (error: any) {
+      console.error("Registration failed:", error);
+      // Handle registration error (show toast, set error message, etc.)
+      let errorMessage = "Registration failed. Please try again.";
+      
+      // You can add more specific error handling based on your API response
+      if (error?.data?.message) {
+        errorMessage = error.data.message;
+      } else if (error?.status === 409) {
+        errorMessage = "Email already exists. Please use a different email.";
+      }
+      
+      setErrors(prev => ({ 
+        ...prev, 
+        email: errorMessage 
+      }));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isPasswordValid = passwordRules.every((rule) =>
@@ -102,17 +137,28 @@ const CreateAccountPage = () => {
   const doPasswordsMatch =
     formData.password === formData.confirmPassword &&
     formData.confirmPassword.length > 0;
-  const isFormValid = isPasswordValid && doPasswordsMatch && !isLoading;
+  
+  const isFormValid = 
+    formData.email && 
+    isPasswordValid && 
+    doPasswordsMatch && 
+    !isLoading;
 
-  // Account Creation Form Step
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="">
+      <Card className="w-full max-w-md">
         <div className="pb-10 md:pb-0">
           {/* Logo */}
           <Logo />
 
           {/* Back Button */}
+          <button 
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-gray-600 mb-4 hover:text-gray-800 transition-colors"
+          >
+            <ArrowLeft size={20} />
+            Back
+          </button>
 
           <h1 className="font-medium text-center text-[32px] text-gray-900 mb-2">
             Create an account
@@ -122,8 +168,8 @@ const CreateAccountPage = () => {
             {/* Email Input */}
             <div>
               <Input
-                label="Email"
-                type="text"
+                label="Email *"
+                type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
@@ -136,7 +182,7 @@ const CreateAccountPage = () => {
             {/* New Password Input */}
             <div className="relative">
               <Input
-                label="New Password"
+                label="New Password *"
                 placeholder="Type a strong password"
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -145,12 +191,12 @@ const CreateAccountPage = () => {
                 icon={showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 onclick={() => setShowPassword((prev) => !prev)}
                 required
-                errorMessage={errors.password} // Display password error
+                errorMessage={errors.password}
               />
             </div>
 
             {formData.password && (
-              <div className="bg-gray-50 rounded-lg space-y-2">
+              <div className="bg-gray-50 rounded-lg space-y-2 p-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">
                   Password must contain:
                 </p>
@@ -184,7 +230,7 @@ const CreateAccountPage = () => {
             {/* Confirm Password Input */}
             <div className="relative">
               <Input
-                label="Confirm Password"
+                label="Confirm Password *"
                 type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 value={formData.confirmPassword}
@@ -226,14 +272,14 @@ const CreateAccountPage = () => {
             {/* Submit Button */}
             <Button
               onClick={handleSubmit}
-              disabled={!isFormValid}
+              disabled={!isFormValid || isRegistering}
               className={`px-6 py-3 rounded-lg w-full font-medium transition-colors mt-6 ${
-                isFormValid
+                isFormValid && !isRegistering
                   ? "bg-primary-500 text-white hover:bg-primary-600 cursor-pointer"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
             >
-              {isLoading ? "Processing..." : "Next"}
+              {isRegistering ? "Creating Account..." : "Create Account"}
             </Button>
           </div>
 

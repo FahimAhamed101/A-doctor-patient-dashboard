@@ -6,6 +6,7 @@ import Logo from "@/assets/logo";
 import { ArrowLeft } from "lucide-react";
 import Card from "@/components/UI/Card";
 import Button from "@/components/UI/Button";
+import { useVerifyEmailMutation } from "@/redux/features/auth/authApi";
 
 // Loading component for Suspense fallback
 const LoadingSpinner = () => (
@@ -18,19 +19,22 @@ const LoadingSpinner = () => (
 const VerifyCodeContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("example@gmail.com");
+  const [email, setEmail] = useState("");
   const [flow, setFlow] = useState("forgot-password"); // 'forgot-password' or 'create-account'
+
+  const [verifyEmail, { isLoading, error }] = useVerifyEmailMutation();
 
   useEffect(() => {
     if (searchParams) {
-      setEmail(searchParams.get("email") || "example@gmail.com");
-      setFlow(searchParams.get("flow") || "forgot-password");
+      const emailParam = searchParams.get("email") || "";
+      const flowParam = searchParams.get("flow") || "forgot-password";
+      setEmail(emailParam);
+      setFlow(flowParam);
     }
   }, [searchParams]);
 
   const [otp, setOtp] = useState(["", "", "", ""]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -52,7 +56,7 @@ const VerifyCodeContent = () => {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-    setError(""); // Clear error when user starts typing
+    setLocalError(""); // Clear error when user starts typing
 
     // Auto-focus next input
     if (value && index < 3) {
@@ -84,41 +88,46 @@ const VerifyCodeContent = () => {
 
     const otpCode = otp.join("");
     if (otpCode.length !== 4) {
-      setError("Please enter the complete 4-digit code");
+      setLocalError("Please enter the complete 4-digit code");
       return;
     }
 
-    setIsLoading(true);
-    setError("");
+    if (!email) {
+      setLocalError("Email is required");
+      return;
+    }
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const result = await verifyEmail({
+        email: email,
+        code: otpCode,
+      }).unwrap();
 
-      // Simulate validation
-      if (otpCode === "1234") {
-        // Mock validation
-        // Redirect based on flow
-        if (flow === "create-account") {
-          // Redirect to HIPAA consent page
-          router.push("/hipaa-consent");
-        } else {
-          // Redirect to reset password page (forgot password flow)
-          router.push(
-            `/reset-password?token=mock_token&email=${encodeURIComponent(
-              email
-            )}`
-          );
-        }
+      console.log("Email verification successful:", result);
+
+      // Redirect based on flow
+      if (flow === "create-account") {
+        // Redirect to HIPAA consent page after successful verification
+        router.push("/hipaa-consent");
       } else {
-        setError("Invalid verification code. Please try again.");
-        setOtp(["", "", "", ""]);
-        inputRefs.current[0]?.focus();
+        // Redirect to reset password page (forgot password flow)
+        router.push(
+          `/reset-password?email=${encodeURIComponent(email)}`
+        );
       }
-    } catch (error) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setIsLoading(false);
+    } catch (err: any) {
+      console.error("Email verification failed:", err);
+      
+      // Handle specific error messages from API
+      if (err?.data?.message) {
+        setLocalError(err.data.message);
+      } else {
+        setLocalError("Invalid verification code. Please try again.");
+      }
+      
+      // Clear OTP and focus first input
+      setOtp(["", "", "", ""]);
+      inputRefs.current[0]?.focus();
     }
   };
 
@@ -128,11 +137,17 @@ const VerifyCodeContent = () => {
     setResendCooldown(60); // 60 seconds cooldown
 
     try {
-      // Simulate API call to resend OTP
+      // Here you would call your resend OTP API
+      // For now, we'll just simulate the API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      // Show success message or handle response
+      
+      // If you have a resend OTP endpoint, you would call it here:
+      // await resendOtp({ email }).unwrap();
+      
+      console.log("Verification code resent to:", email);
     } catch (error) {
-      setError("Failed to resend code. Please try again.");
+      console.error("Failed to resend code:", error);
+      setLocalError("Failed to resend code. Please try again.");
     }
   };
 
@@ -153,6 +168,20 @@ const VerifyCodeContent = () => {
     }
     return "Back to login";
   };
+
+  // Extract error message from RTK Query error
+  const getApiErrorMessage = () => {
+    if (error) {
+      if ('data' in error) {
+        return (error as any).data?.message || "Verification failed. Please try again.";
+      }
+      return "Verification failed. Please try again.";
+    }
+    return null;
+  };
+
+  const apiErrorMessage = getApiErrorMessage();
+  const displayError = localError || apiErrorMessage;
 
   return (
     <div className="min-h-screen flex items-center justify-center md:p-4">
@@ -193,18 +222,19 @@ const VerifyCodeContent = () => {
                 className={`
                   w-16 h-16 text-center text-[16px] text-primary-500 font-medium bg-white border rounded-lg
                   focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all
-                  ${error ? "border-[#B42121]" : "border-tertiary"}
+                  ${displayError ? "border-[#B42121]" : "border-tertiary"}
                   ${digit ? "border-primary-500" : ""}
                 `}
                 placeholder=""
+                disabled={isLoading}
               />
             ))}
           </div>
 
           {/* Error Message */}
-          {error && (
+          {displayError && (
             <div className="text-[#B42121] text-sm text-center font-medium">
-              {error}
+              {displayError}
             </div>
           )}
 
@@ -230,7 +260,7 @@ const VerifyCodeContent = () => {
           <span className="text-gray-600">Don't receive OTP? </span>
           <button
             onClick={handleResendCode}
-            disabled={resendCooldown > 0}
+            disabled={resendCooldown > 0 || isLoading}
             className="text-primary-500 font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
           >
             {resendCooldown > 0

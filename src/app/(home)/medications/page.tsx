@@ -1,9 +1,7 @@
 "use client"
 import React, { useState } from 'react';
-import { Edit3 } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
+import { useGetMedicationsQuery } from '@/redux/features/medications/medicationsApi';
 
 // Define interfaces for type safety
 interface Reminder {
@@ -13,13 +11,6 @@ interface Reminder {
 
 interface ReminderState extends Reminder {
   enabled: boolean;
-}
-
-interface Medication {
-  id: number;
-  name: string;
-  instructions: string;
-  reminders: Reminder[];
 }
 
 interface MedicationCardProps {
@@ -118,47 +109,83 @@ const MedicationCard: React.FC<MedicationCardProps> = ({
 };
 
 const MedicationTracker: React.FC = () => {
-  const [medications] = useState<Medication[]>([
-    {
-      id: 1,
-      name: "Ibuprofen 800 mg",
-      instructions: "Take one tablet by mouth twice daily as needed for pain",
+  const { data: medicationsResponse, isLoading, error } = useGetMedicationsQuery();
+  const router = useRouter();
+
+  // Transform API data to match the component structure
+  const transformMedications = () => {
+    if (!medicationsResponse?.medications) return [];
+
+    return medicationsResponse.medications.map((medication) => ({
+      id: medication._id,
+      name: medication.name,
+      dosage: medication.dosage,
+      instructions: medication.instructions || `Take ${medication.dosage} as prescribed`,
       reminders: [
-        { time: "9:00 AM", frequency: "Repeat Daily" },
-        { time: "9:00 PM", frequency: "Repeat Daily" }
+        { 
+          time: medication.reminderTime, 
+          frequency: "Repeat Daily" 
+        }
       ]
-    },
-    {
-      id: 2,
-      name: "Amoxicillin 500 mg",
-      instructions: "Take one tablet by mouth twice daily as needed for pain",
-      reminders: [
-        { time: "8:00 AM", frequency: "Repeat Daily" },
-        { time: "2:00 PM", frequency: "Repeat Daily" },
-       
-      ]
-    }
-  ]);
-const router = useRouter();
-  const handleEdit = (medicationId: number) => {
-    console.log(`Edit medication with ID: ${medicationId}`);
-    router.push(`/medications/edit`);
+    }));
   };
+
+  const handleEdit = (medicationId: string) => {
+    console.log(`Edit medication with ID: ${medicationId}`);
+    router.push(`/medications/edit?id=${medicationId}`);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-wrap gap-4 py-6 justify-center bg-white">
+            <div className="rounded-lg p-4 shadow-md w-full max-w-sm">
+              <div className="text-center">Loading medications...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-wrap gap-4 py-6 justify-center bg-white">
+            <div className="rounded-lg p-4 shadow-md w-full max-w-sm">
+              <div className="text-center text-red-600">Error loading medications</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const medications = transformMedications();
 
   return (
     <div className="min-h-screen  p-6">
       <div className="max-w-4xl mx-auto">
        
         <div className="flex flex-wrap gap-4 py-6 justify-center  bg-white">
-          {medications.map((medication) => (
-            <MedicationCard
-              key={medication.id}
-              medicationName={medication.name}
-              instructions={medication.instructions}
-              reminders={medication.reminders}
-              onEdit={() => handleEdit(medication.id)}
-            />
-          ))}
+          {medications.length > 0 ? (
+            medications.map((medication) => (
+              <MedicationCard
+                key={medication.id}
+                medicationName={medication.name}
+                dosage={medication.dosage}
+                instructions={medication.instructions}
+                reminders={medication.reminders}
+                onEdit={() => handleEdit(medication.id)}
+              />
+            ))
+          ) : (
+            <div className="rounded-lg p-4 shadow-md w-full max-w-sm">
+              <div className="text-center text-gray-500">No medications found</div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,5 @@
 "use client";
-import { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Logo from "@/assets/logo";
@@ -9,34 +7,61 @@ import { ArrowLeft } from "lucide-react";
 import Card from "@/components/UI/Card";
 import Input from "@/components/UI/Input";
 import Button from "@/components/UI/Button";
-
-// export const metadata: Metadata = {
-//   title: "Forgot Password | Wellbyn",
-//   description: "Reset your password for Wellbyn account",
-//   keywords: ["forgot password", "reset", "wellbyn"],
-// };
+import { useForgotPasswordMutation } from "@/redux/features/auth/authApi";
 
 const ForgotPasswordPage = () => {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const [forgotPassword, { isLoading: isApiLoading }] = useForgotPasswordMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Redirect to verify code page with email parameter
-      router.push(`/verify-code?email=${encodeURIComponent(email)}`);
-    } catch (error) {
+    // Basic email validation
+    if (!email) {
+      setError("Email is required");
       setIsLoading(false);
-      // Handle error
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError("Please enter a valid email address");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const result = await forgotPassword({
+        email: email,
+      }).unwrap();
+
+      console.log("Forgot password request successful:", result);
+
+      // Redirect to verify code page with email parameter and flow type
+      router.push(`/verify-code?email=${encodeURIComponent(email)}&flow=forgot-password`);
+      
+    } catch (err: any) {
+      console.error("Forgot password request failed:", err);
+      
+      // Handle specific error messages from API
+      if (err?.data?.message) {
+        setError(err.data.message);
+      } else if (err?.status === 404) {
+        setError("No account found with this email address");
+      } else {
+        setError("Failed to send reset code. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  const isLoadingState = isLoading || isApiLoading;
 
   return (
     <div className="min-h-screen flex items-center justify-center md:p-4">
@@ -51,6 +76,13 @@ const ForgotPasswordPage = () => {
           Enter your email to reset your password.
         </p>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p className="text-red-600 text-sm font-medium">{error}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Input
@@ -58,18 +90,22 @@ const ForgotPasswordPage = () => {
               type="email"
               name="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(""); // Clear error when user starts typing
+              }}
               placeholder="Example@gmail.com"
               required
+              errorMessage={error.includes("email") ? error : ""}
             />
           </div>
 
           <Button
             type="submit"
-            disabled={isLoading || !email}
+            disabled={isLoadingState || !email}
             className="bg-primary-500 text-white px-6 py-3 rounded-lg w-full font-medium hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
-            {isLoading ? (
+            {isLoadingState ? (
               <div className="flex items-center justify-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 Sending...

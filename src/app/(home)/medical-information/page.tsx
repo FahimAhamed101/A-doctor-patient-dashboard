@@ -1,7 +1,8 @@
+// app/medical-information/page.tsx
 "use client";
 
-import React, { useState } from "react";
-import { Plus, Trash2, User, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,46 +12,39 @@ import {
 } from "@/components/UI/Dialog";
 import Button from "@/components/UI/Button";
 import Link from "next/link";
-import Card from "@/components/UI/Card";
-
-interface Allergy {
-  id: string;
-  name: string;
-  severity: string;
-}
-
-interface Medication {
-  id: string;
-  name: string;
-  frequency: string;
-}
+import { 
+  useGetMedicalInfoQuery, 
+  useUpdateMedicalInfoMutation,
+  type Allergy,
+  type Medication,
+  type ExistingCondition,
+  type LifestyleFactor 
+} from "@/redux/features/medical/medicalApi";
 
 interface MedicalFormData {
   allergies: Allergy[];
   medications: Medication[];
-  conditions: string[];
-  lifestyleFactors: string[];
+  existingConditions: ExistingCondition[];
+  lifestyleFactors: LifestyleFactor[];
 }
 
 const MedicalInformationPage = () => {
-  
+  const { data: medicalInfo, isLoading, error } = useGetMedicalInfoQuery();
+  const [updateMedicalInfo, { isLoading: isUpdating }] = useUpdateMedicalInfoMutation();
+
   const [formData, setFormData] = useState<MedicalFormData>({
-    allergies: [
-      { id: "1", name: "Penicillin", severity: "Moderate" },
-      { id: "2", name: "Penicillin", severity: "Moderate" },
-    ],
-    medications: [
-      { id: "1", name: "Lisinopril", frequency: "Once daily" },
-      { id: "2", name: "Metformin", frequency: "Twice daily" },
-    ],
-    conditions: [],
+    allergies: [],
+    medications: [],
+    existingConditions: [],
     lifestyleFactors: [],
   });
 
   const [newAllergy, setNewAllergy] = useState({ name: "", severity: "" });
   const [newMedication, setNewMedication] = useState({
     name: "",
-    frequency: "",
+    dosage: "",
+    reminderTime: "",
+    notify: true,
   });
   const [newCondition, setNewCondition] = useState("");
   const [newLifestyleFactor, setNewLifestyleFactor] = useState("");
@@ -74,10 +68,21 @@ const MedicalInformationPage = () => {
     "Alcohol",
   ]);
 
+  // Load data from API when component mounts
+  useEffect(() => {
+    if (medicalInfo?.data) {
+      setFormData({
+        allergies: medicalInfo.data.allergies || [],
+        medications: medicalInfo.data.medications || [],
+        existingConditions: medicalInfo.data.existingConditions || [],
+        lifestyleFactors: medicalInfo.data.lifestyleFactors || [],
+      });
+    }
+  }, [medicalInfo]);
+
   const handleAddAllergy = () => {
     if (newAllergy.name && newAllergy.severity) {
       const allergy: Allergy = {
-        id: Date.now().toString(),
         name: newAllergy.name,
         severity: newAllergy.severity,
       };
@@ -91,17 +96,18 @@ const MedicalInformationPage = () => {
   };
 
   const handleAddMedication = () => {
-    if (newMedication.name && newMedication.frequency) {
+    if (newMedication.name && newMedication.dosage) {
       const medication: Medication = {
-        id: Date.now().toString(),
         name: newMedication.name,
-        frequency: newMedication.frequency,
+        dosage: newMedication.dosage,
+        reminderTime: newMedication.reminderTime || "08:00", // Default time if not provided
+        notify: newMedication.notify,
       };
       setFormData((prev) => ({
         ...prev,
         medications: [...prev.medications, medication],
       }));
-      setNewMedication({ name: "", frequency: "" });
+      setNewMedication({ name: "", dosage: "", reminderTime: "", notify: true });
       setMedicationModalOpen(false);
     }
   };
@@ -110,21 +116,24 @@ const MedicalInformationPage = () => {
     if (newCondition.trim()) {
       // Check if condition already exists
       if (!conditionOptions.includes(newCondition)) {
-        // Add to options list
         setConditionOptions((prev) => [...prev, newCondition]);
       }
-      // Add to selected conditions
+      
+      const condition: ExistingCondition = {
+        name: newCondition,
+      };
+      
       if (newCondition === "None") {
         setFormData((prev) => ({
           ...prev,
-          conditions: ["None"],
+          existingConditions: [condition],
         }));
       } else {
         setFormData((prev) => ({
           ...prev,
-          conditions: [
-            ...prev.conditions.filter((c) => c !== "None"),
-            newCondition,
+          existingConditions: [
+            ...prev.existingConditions.filter((c) => c.name !== "None"),
+            condition,
           ],
         }));
       }
@@ -135,66 +144,104 @@ const MedicalInformationPage = () => {
 
   const handleAddLifestyleFactor = () => {
     if (newLifestyleFactor.trim()) {
-      // Check if lifestyle factor already exists
       if (!lifestyleOptions.includes(newLifestyleFactor)) {
-        // Add to options list
         setLifestyleOptions((prev) => [...prev, newLifestyleFactor]);
       }
-      // Add to selected lifestyle factors
+      
+      const lifestyleFactor: LifestyleFactor = {
+        type: newLifestyleFactor,
+      };
+      
       setFormData((prev) => ({
         ...prev,
-        lifestyleFactors: [...prev.lifestyleFactors, newLifestyleFactor],
+        lifestyleFactors: [...prev.lifestyleFactors, lifestyleFactor],
       }));
       setNewLifestyleFactor("");
       setLifestyleModalOpen(false);
     }
   };
 
-  const handleRemoveAllergy = (id: string) => {
+  const handleRemoveAllergy = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      allergies: prev.allergies.filter((allergy) => allergy.id !== id),
+      allergies: prev.allergies.filter((_, i) => i !== index),
     }));
   };
 
-  const handleRemoveMedication = (id: string) => {
+  const handleRemoveMedication = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      medications: prev.medications.filter(
-        (medication) => medication.id !== id
-      ),
+      medications: prev.medications.filter((_, i) => i !== index),
     }));
   };
 
-  const handleConditionChange = (condition: string) => {
-    if (condition === "None") {
+  const handleConditionChange = (conditionName: string) => {
+    if (conditionName === "None") {
       setFormData((prev) => ({
         ...prev,
-        conditions: prev.conditions.includes("None") ? [] : ["None"],
+        existingConditions: prev.existingConditions.some(c => c.name === "None") 
+          ? [] 
+          : [{ name: "None" }],
       }));
     } else {
       setFormData((prev) => {
-        const newConditions = prev.conditions.includes(condition)
-          ? prev.conditions.filter((c) => c !== condition)
-          : [...prev.conditions.filter((c) => c !== "None"), condition];
-        return { ...prev, conditions: newConditions };
+        const existingIndex = prev.existingConditions.findIndex(c => c.name === conditionName);
+        const newConditions = [...prev.existingConditions.filter(c => c.name !== "None")];
+        
+        if (existingIndex >= 0) {
+          newConditions.splice(existingIndex, 1);
+        } else {
+          newConditions.push({ name: conditionName });
+        }
+        
+        return { ...prev, existingConditions: newConditions };
       });
     }
   };
 
-  const handleLifestyleChange = (factor: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      lifestyleFactors: prev.lifestyleFactors.includes(factor)
-        ? prev.lifestyleFactors.filter((f) => f !== factor)
-        : [...prev.lifestyleFactors, factor],
-    }));
+  const handleLifestyleChange = (factorType: string) => {
+    setFormData((prev) => {
+      const existingIndex = prev.lifestyleFactors.findIndex(f => f.type === factorType);
+      const newFactors = [...prev.lifestyleFactors];
+      
+      if (existingIndex >= 0) {
+        newFactors.splice(existingIndex, 1);
+      } else {
+        newFactors.push({ type: factorType });
+      }
+      
+      return { ...prev, lifestyleFactors: newFactors };
+    });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Medical information:", formData);
-    // Handle form submission
+    try {
+      // Transform form data to match API structure
+      const apiData = {
+        allergies: formData.allergies.map(allergy => ({
+          name: allergy.name,
+          severity: allergy.severity
+        })),
+        medications: formData.medications.map(medication => ({
+          name: medication.name,
+          dosage: medication.dosage,
+          reminderTime: medication.reminderTime
+        })),
+        existingConditions: formData.existingConditions.map(condition => ({
+          name: condition.name
+        })),
+        lifestyleFactors: formData.lifestyleFactors.map(factor => ({
+          type: factor.type
+        }))
+      };
+
+      await updateMedicalInfo(apiData).unwrap();
+      alert('Medical information updated successfully!');
+    } catch (error) {
+      console.error('Failed to update medical information:', error);
+      alert('Failed to update medical information. Please try again.');
+    }
   };
 
   const SeverityButton = ({
@@ -219,13 +266,26 @@ const MedicalInformationPage = () => {
     </button>
   );
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">Loading medical information...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-red-600">Error loading medical information</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center md:p-4">
       <div className="w-full max-w-4xl flex justify-center bg-white">
         <div className="p-6">
-     
-
-          {/* Main Form Card */}
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center mb-4">
@@ -258,7 +318,6 @@ const MedicalInformationPage = () => {
                   strokeLinejoin="round"
                 />
               </svg>
-
               <h1 className="ml-2 text-2xl font-medium text-black">
                 Medical Information
               </h1>
@@ -274,10 +333,7 @@ const MedicalInformationPage = () => {
             <div className="bg-white shadow-sm p-2 rounded-lg mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900">Allergies</h2>
-                <Dialog
-                  open={allergyModalOpen}
-                  onOpenChange={setAllergyModalOpen}
-                >
+                <Dialog open={allergyModalOpen} onOpenChange={setAllergyModalOpen}>
                   <DialogTrigger asChild>
                     <button
                       type="button"
@@ -378,13 +434,13 @@ const MedicalInformationPage = () => {
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 <div className="bg-[#F0F5FE] px-4 py-3 grid grid-cols-3 text-sm font-medium text-gray-700">
                   <div>Name</div>
-                  <div className="text-center">Dosage</div>
+                  <div className="text-center">Severity</div>
                   <div className="text-right">Action</div>
                 </div>
                 <div className="divide-y divide-gray-200">
                   {formData.allergies.map((allergy, index) => (
                     <div
-                      key={allergy.id}
+                      key={index}
                       className={`px-4 py-3 grid grid-cols-3 items-center ${
                         index % 2 !== 0 ? "bg-[#EDF4FA]" : ""
                       }`}
@@ -396,7 +452,7 @@ const MedicalInformationPage = () => {
                       <div className="text-right pr-5">
                         <button
                           type="button"
-                          onClick={() => handleRemoveAllergy(allergy.id)}
+                          onClick={() => handleRemoveAllergy(index)}
                           className="text-gray-400 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -404,6 +460,11 @@ const MedicalInformationPage = () => {
                       </div>
                     </div>
                   ))}
+                  {formData.allergies.length === 0 && (
+                    <div className="px-4 py-3 text-center text-gray-500">
+                      No allergies added
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -414,10 +475,7 @@ const MedicalInformationPage = () => {
                 <h2 className="text-lg font-medium text-gray-900">
                   Current Medications
                 </h2>
-                <Dialog
-                  open={medicationModalOpen}
-                  onOpenChange={setMedicationModalOpen}
-                >
+                <Dialog open={medicationModalOpen} onOpenChange={setMedicationModalOpen}>
                   <DialogTrigger asChild>
                     <button
                       type="button"
@@ -453,36 +511,64 @@ const MedicalInformationPage = () => {
                       </div>
                       <div>
                         <label className="block text-[18px] font-medium text-text-primary mb-3">
-                          Frequency
+                          Dosage
                         </label>
                         <select
-                          value={newMedication.frequency}
+                          value={newMedication.dosage}
                           onChange={(e) =>
                             setNewMedication((prev) => ({
                               ...prev,
-                              frequency: e.target.value,
+                              dosage: e.target.value,
                             }))
                           }
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                         >
-                          <option value="">Select frequency</option>
+                          <option value="">Select dosage</option>
                           <option value="Once daily">Once daily</option>
                           <option value="Twice daily">Twice daily</option>
-                          <option value="Three times daily">
-                            Three times daily
-                          </option>
+                          <option value="Three times daily">Three times daily</option>
                           <option value="As needed">As needed</option>
                         </select>
+                      </div>
+                      <div>
+                        <label className="block text-[18px] font-medium text-text-primary mb-2">
+                          Reminder Time
+                        </label>
+                        <input
+                          type="time"
+                          value={newMedication.reminderTime}
+                          onChange={(e) =>
+                            setNewMedication((prev) => ({
+                              ...prev,
+                              reminderTime: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium focus:border-transparent outline-none transition-all"
+                        />
+                      </div>
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={newMedication.notify}
+                          onChange={(e) =>
+                            setNewMedication((prev) => ({
+                              ...prev,
+                              notify: e.target.checked,
+                            }))
+                          }
+                          className="mr-2"
+                        />
+                        <label className="text-text-primary">Enable notifications</label>
                       </div>
                       <div className="flex justify-end">
                         <div className="flex">
                           <Button
                             type="button"
                             onClick={() => {
-                              setNewMedication({ name: "", frequency: "" });
+                              setNewMedication({ name: "", dosage: "", reminderTime: "", notify: true });
                               setMedicationModalOpen(false);
                             }}
-                            className="border border-text-secondary  text-text-secondary hover:border-gray-400 font-medium"
+                            className="border border-text-secondary text-text-secondary hover:border-gray-400 font-medium"
                           >
                             Cancel
                           </Button>
@@ -490,9 +576,7 @@ const MedicalInformationPage = () => {
                             type="button"
                             onClick={handleAddMedication}
                             className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-[#1a588a] cursor-pointer border border-primary-500"
-                            disabled={
-                              !newMedication.name || !newMedication.frequency
-                            }
+                            disabled={!newMedication.name || !newMedication.dosage}
                           >
                             Add
                           </Button>
@@ -504,27 +588,35 @@ const MedicalInformationPage = () => {
               </div>
 
               <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="bg-[#F0F5FE] px-4 py-3 grid grid-cols-3 text-sm font-medium text-gray-700">
+                <div className="bg-[#F0F5FE] px-4 py-3 grid grid-cols-5 text-sm font-medium text-gray-700">
                   <div>Name</div>
-                  <div className="text-center">Frequency</div>
+                  <div className="text-center">Dosage</div>
+                  <div className="text-center">Reminder Time</div>
+                  <div className="text-center">Notify</div>
                   <div className="text-right">Action</div>
                 </div>
                 <div className="divide-y divide-gray-200">
                   {formData.medications.map((medication, index) => (
                     <div
-                      key={medication.id}
-                      className={`px-4 py-3 grid grid-cols-3 items-center ${
+                      key={index}
+                      className={`px-4 py-3 grid grid-cols-5 items-center ${
                         index % 2 !== 0 ? "bg-[#EDF4FA]" : ""
                       }`}
                     >
                       <div className="text-gray-900">{medication.name}</div>
                       <div className="text-gray-600 text-center">
-                        {medication.frequency}
+                        {medication.dosage}
+                      </div>
+                      <div className="text-gray-600 text-center">
+                        {medication.reminderTime || "Not set"}
+                      </div>
+                      <div className="text-gray-600 text-center">
+                        {medication.notify ? "Yes" : "No"}
                       </div>
                       <div className="text-right pr-5">
                         <button
                           type="button"
-                          onClick={() => handleRemoveMedication(medication.id)}
+                          onClick={() => handleRemoveMedication(index)}
                           className="text-gray-400 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -532,6 +624,11 @@ const MedicalInformationPage = () => {
                       </div>
                     </div>
                   ))}
+                  {formData.medications.length === 0 && (
+                    <div className="px-4 py-3 text-center text-gray-500">
+                      No medications added
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -542,10 +639,7 @@ const MedicalInformationPage = () => {
                 <h2 className="text-lg font-medium text-gray-900">
                   Existing Conditions
                 </h2>
-                <Dialog
-                  open={conditionModalOpen}
-                  onOpenChange={setConditionModalOpen}
-                >
+                <Dialog open={conditionModalOpen} onOpenChange={setConditionModalOpen}>
                   <DialogTrigger asChild>
                     <button
                       type="button"
@@ -577,23 +671,23 @@ const MedicalInformationPage = () => {
                       <div className="flex justify-end">
                         <div className="flex">
                           <Button
-                          type="button"
-                          onClick={() => {
-                            setNewCondition("");
-                            setConditionModalOpen(false);
-                          }}
-                          className="border border-text-secondary  text-text-secondary hover:border-gray-400 font-medium"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={handleAddCondition}
-                          className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-[#1a588a] cursor-pointer border border-primary-500"
-                          disabled={!newCondition.trim()}
-                        >
-                          Add
-                        </Button>
+                            type="button"
+                            onClick={() => {
+                              setNewCondition("");
+                              setConditionModalOpen(false);
+                            }}
+                            className="border border-text-secondary text-text-secondary hover:border-gray-400 font-medium"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleAddCondition}
+                            className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-[#1a588a] cursor-pointer border border-primary-500"
+                            disabled={!newCondition.trim()}
+                          >
+                            Add
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -605,9 +699,9 @@ const MedicalInformationPage = () => {
                   <label key={condition} className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={formData.conditions.includes(condition)}
+                      checked={formData.existingConditions.some(c => c.name === condition)}
                       onChange={() => handleConditionChange(condition)}
-                     className="min-w-6 min-h-6 before:bg-[#F2F8FD]  appearance-none text-[#F2F8FD] border-none outline-none bg-[#F2F8FD] rounded-sm shadow-md checked:bg-[#2E8BC9] checked:ring-[#2E8BC9] transition-all checkmarkInput"
+                      className="min-w-6 min-h-6 before:bg-[#F2F8FD] appearance-none text-[#F2F8FD] border-none outline-none bg-[#F2F8FD] rounded-sm shadow-md checked:bg-[#2E8BC9] checked:ring-[#2E8BC9] transition-all checkmarkInput"
                     />
                     <span className="ml-3 text-gray-700">{condition}</span>
                   </label>
@@ -621,10 +715,7 @@ const MedicalInformationPage = () => {
                 <h2 className="text-lg font-medium text-gray-900">
                   Lifestyle Factors
                 </h2>
-                <Dialog
-                  open={lifestyleModalOpen}
-                  onOpenChange={setLifestyleModalOpen}
-                >
+                <Dialog open={lifestyleModalOpen} onOpenChange={setLifestyleModalOpen}>
                   <DialogTrigger asChild>
                     <button
                       type="button"
@@ -649,32 +740,30 @@ const MedicalInformationPage = () => {
                           type="text"
                           placeholder="Enter lifestyle factors name"
                           value={newLifestyleFactor}
-                          onChange={(e) =>
-                            setNewLifestyleFactor(e.target.value)
-                          }
+                          onChange={(e) => setNewLifestyleFactor(e.target.value)}
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-medium focus:border-transparent outline-none transition-all text-[#7C7C7C] placeholder:text-text-secondary"
                         />
                       </div>
                       <div className="flex justify-end">
                         <div className="flex">
                           <Button
-                          type="button"
-                          onClick={() => {
-                            setNewLifestyleFactor("");
-                            setLifestyleModalOpen(false);
-                          }}
-                          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={handleAddLifestyleFactor}
-                          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-                          disabled={!newLifestyleFactor.trim()}
-                        >
-                          Add
-                        </Button>
+                            type="button"
+                            onClick={() => {
+                              setNewLifestyleFactor("");
+                              setLifestyleModalOpen(false);
+                            }}
+                            className="border border-text-secondary text-text-secondary hover:border-gray-400 font-medium"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleAddLifestyleFactor}
+                            className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-[#1a588a] cursor-pointer border border-primary-500"
+                            disabled={!newLifestyleFactor.trim()}
+                          >
+                            Add
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -686,9 +775,9 @@ const MedicalInformationPage = () => {
                   <label key={factor} className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={formData.lifestyleFactors.includes(factor)}
+                      checked={formData.lifestyleFactors.some(f => f.type === factor)}
                       onChange={() => handleLifestyleChange(factor)}
-                     className="min-w-6 min-h-6 before:bg-[#F2F8FD]  appearance-none text-[#F2F8FD] border-none outline-none bg-[#F2F8FD] rounded-sm shadow-md checked:bg-[#2E8BC9] checked:ring-[#2E8BC9] transition-all checkmarkInput"
+                      className="min-w-6 min-h-6 before:bg-[#F2F8FD] appearance-none text-[#F2F8FD] border-none outline-none bg-[#F2F8FD] rounded-sm shadow-md checked:bg-[#2E8BC9] checked:ring-[#2E8BC9] transition-all checkmarkInput"
                     />
                     <span className="ml-3 text-gray-700">{factor}</span>
                   </label>
@@ -696,26 +785,20 @@ const MedicalInformationPage = () => {
               </div>
             </div>
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-end pt-6">
-            
-              <Link href="/insurance-information">
-               {/* Submit Button */}
-        <div className='flex justify-end items-end'>
-  <button
-          type="submit"
-          className="flex items-center justify-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#2E8BC9]  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M14.0737 3.88545C14.8189 3.07808 15.1915 2.6744 15.5874 2.43893C16.5427 1.87076 17.7191 1.85309 18.6904 2.39232C19.0929 2.6158 19.4769 3.00812 20.245 3.79276C21.0131 4.5774 21.3972 4.96972 21.6159 5.38093C22.1438 6.37312 22.1265 7.57479 21.5703 8.5507C21.3398 8.95516 20.9446 9.33578 20.1543 10.097L10.7506 19.1543C9.25288 20.5969 8.504 21.3182 7.56806 21.6837C6.63212 22.0493 5.6032 22.0224 3.54536 21.9686L3.26538 21.9613C2.63891 21.9449 2.32567 21.9367 2.14359 21.73C1.9615 21.5234 1.98636 21.2043 2.03608 20.5662L2.06308 20.2197C2.20301 18.4235 2.27297 17.5255 2.62371 16.7182C2.97444 15.9109 3.57944 15.2555 4.78943 13.9445L14.0737 3.88545Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-<path d="M13 4L20 11" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-<path d="M14 22H22" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-  Submit Information
-        </button>
-
-        </div>
-              </Link>
+            {/* Submit Button */}
+            <div className="flex justify-end items-end">
+              <button
+                type="submit"
+                disabled={isUpdating}
+                className="flex items-center justify-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#2E8BC9] hover:bg-[#1a588a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.0737 3.88545C14.8189 3.07808 15.1915 2.6744 15.5874 2.43893C16.5427 1.87076 17.7191 1.85309 18.6904 2.39232C19.0929 2.6158 19.4769 3.00812 20.245 3.79276C21.0131 4.5774 21.3972 4.96972 21.6159 5.38093C22.1438 6.37312 22.1265 7.57479 21.5703 8.5507C21.3398 8.95516 20.9446 9.33578 20.1543 10.097L10.7506 19.1543C9.25288 20.5969 8.504 21.3182 7.56806 21.6837C6.63212 22.0493 5.6032 22.0224 3.54536 21.9686L3.26538 21.9613C2.63891 21.9449 2.32567 21.9367 2.14359 21.73C1.9615 21.5234 1.98636 21.2043 2.03608 20.5662L2.06308 20.2197C2.20301 18.4235 2.27297 17.5255 2.62371 16.7182C2.97444 15.9109 3.57944 15.2555 4.78943 13.9445L14.0737 3.88545Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                  <path d="M13 4L20 11" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                  <path d="M14 22H22" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                {isUpdating ? 'Updating...' : 'Submit Information'}
+              </button>
             </div>
           </form>
         </div>

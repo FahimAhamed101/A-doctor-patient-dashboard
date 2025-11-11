@@ -12,6 +12,8 @@ import {
 import Button from "@/components/UI/Button";
 import Link from "next/link";
 import Card from "@/components/UI/Card";
+import { useRouter } from "next/navigation";
+import { useUpdateMedicalInfoMutation } from "@/redux/features/onboarding/onboardingApi";
 
 interface Allergy {
   id: string;
@@ -58,6 +60,10 @@ const MedicalInformationPage = () => {
   const [medicationModalOpen, setMedicationModalOpen] = useState(false);
   const [conditionModalOpen, setConditionModalOpen] = useState(false);
   const [lifestyleModalOpen, setLifestyleModalOpen] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [updateMedicalInfo, { isLoading }] = useUpdateMedicalInfoMutation();
+  const router = useRouter();
 
   const [conditionOptions, setConditionOptions] = useState([
     "Diabetes",
@@ -191,10 +197,55 @@ const MedicalInformationPage = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Medical information:", formData);
-    // Handle form submission
+    
+    try {
+      // Transform data to match API structure
+      const apiData = {
+        allergies: formData.allergies.map(allergy => ({
+          name: allergy.name,
+          severity: allergy.severity
+        })),
+        medications: formData.medications.map(medication => ({
+          name: medication.name,
+          dosage: medication.frequency, // Using frequency as dosage for API
+          reminderTime: "08:00" // Default time, you can modify this as needed
+        })),
+        existingConditions: formData.conditions.map(condition => ({
+          name: condition
+        })),
+        lifestyleFactors: formData.lifestyleFactors.map(factor => ({
+          type: factor
+        }))
+      };
+
+      console.log('Submitting medical data:', apiData);
+
+      // Make API call
+      const result = await updateMedicalInfo(apiData).unwrap();
+
+      console.log("Medical info updated successfully:", result);
+      
+      // Redirect to next step
+      router.push("/insurance-info");
+
+    } catch (error: any) {
+      console.error("Failed to update medical info:", error);
+      
+      // Handle API errors
+      if (error.data?.message) {
+        setErrors(prev => ({ 
+          ...prev, 
+          submit: error.data.message 
+        }));
+      } else {
+        setErrors(prev => ({ 
+          ...prev, 
+          submit: "Failed to save medical information. Please try again." 
+        }));
+      }
+    }
   };
 
   const SeverityButton = ({
@@ -294,6 +345,13 @@ const MedicalInformationPage = () => {
               stay connected with your healthcare providers.
             </p>
           </div>
+
+          {/* Error Message */}
+          {errors.submit && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-600 text-sm font-medium">{errors.submit}</p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Allergies Section */}
@@ -689,14 +747,14 @@ const MedicalInformationPage = () => {
                             setNewLifestyleFactor("");
                             setLifestyleModalOpen(false);
                           }}
-                          className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700"
+                          className="border border-text-secondary bg-white text-text-secondary hover:border-gray-400 font-medium"
                         >
                           Cancel
                         </Button>
                         <Button
                           type="button"
                           onClick={handleAddLifestyleFactor}
-                          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                          className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-[#1a588a] cursor-pointer border border-primary-500"
                           disabled={!newLifestyleFactor.trim()}
                         >
                           Add
@@ -732,14 +790,13 @@ const MedicalInformationPage = () => {
                   Previous
                 </button>
               </Link>
-              <Link href="/insurance-info">
-                <button
-                  type="submit"
-                  className="flex items-center px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-[#1a588a] cursor-pointer transition-colors"
-                >
-                  Save & Next
-                </button>
-              </Link>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex items-center px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-[#1a588a] cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Saving..." : "Save & Next"}
+              </button>
             </div>
           </form>
         </Card>

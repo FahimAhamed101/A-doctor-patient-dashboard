@@ -8,6 +8,11 @@ import { cn } from "@/utils/cn";
 import Logo from "@/assets/logo";
 import WellbynLogo from "@/assets/wellbynlogo";
 import Link from "next/link";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "@/redux/features/auth/authSlice";
+import { useLogoutMutation } from "@/redux/features/auth/authApi";
+import { RootState } from "@/redux/store";
+
 
 // Define sidebar menu items based on the image
 const mainMenuItems = [
@@ -660,6 +665,91 @@ function SidebarSection({
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const dispatch = useDispatch();
+  const [logoutApi, { isLoading: isLoggingOut }] = useLogoutMutation();
+  
+  // Get user data from Redux store
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  // Generate initials from user's name
+  const getUserInitials = () => {
+    if (!user?.firstName && !user?.lastName) {
+      // Fallback to email first letter or "US"
+      return user?.email ? user.email.charAt(0).toUpperCase() : "US";
+    }
+    
+    const firstInitial = user.firstName ? user.firstName.charAt(0).toUpperCase() : '';
+    const lastInitial = user.lastName ? user.lastName.charAt(0).toUpperCase() : '';
+    
+    return firstInitial + lastInitial || "US";
+  };
+
+  // Get full name for display - prioritize personalInfo, then insuranceInfo, then fallback
+  const getFullName = () => {
+    // First try personalInfo
+    if (user?.personalInfo?.fullName) {
+      const { first, last } = user.personalInfo.fullName;
+      if (first && last) return `${first} ${last}`;
+      if (first) return first;
+      if (last) return last;
+    }
+    
+    // Then try direct firstName/lastName from auth state
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    if (user?.firstName) {
+      return user.firstName;
+    }
+    if (user?.lastName) {
+      return user.lastName;
+    }
+    
+    // Fallback to insurance info
+    if (user?.insuranceInfo && user.insuranceInfo.length > 0) {
+      const insuranceName = user.insuranceInfo[0]?.subscriber;
+      if (insuranceName?.firstName && insuranceName?.lastName) {
+        return `${insuranceName.firstName} ${insuranceName.lastName}`;
+      }
+    }
+    
+    // Final fallback
+    return user?.email || "User";
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutApi().unwrap();
+      dispatch(logout());
+      
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('accessTokenExpires');
+        localStorage.removeItem('refreshTokenExpires');
+        localStorage.removeItem('user');
+        localStorage.removeItem('auth');
+      }
+      
+      console.log("Logout successful");
+      router.push("/login");
+      
+    } catch (error) {
+      console.error("Logout failed:", error);
+      dispatch(logout());
+      
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('accessTokenExpires');
+        localStorage.removeItem('refreshTokenExpires');
+        localStorage.removeItem('user');
+        localStorage.removeItem('auth');
+      }
+      
+      router.push("/login");
+    }
+  };
 
   // Get active item from current pathname
   const getActiveItem = () => {
@@ -792,11 +882,11 @@ export function Sidebar() {
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-medium text-sm">Ma</span>
+              <span className="text-white font-medium text-sm">   {getUserInitials()}</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-lg font-medium text-gray-900 truncate">
-                Mahmudur Rahman
+                 {getFullName()}
               </p>
               <p className="text-base text-gray-500 truncate">
                 Personal account
@@ -843,29 +933,45 @@ export function Sidebar() {
             </div>
           </div>
 
-          <button className="w-full font-medium leading-normal tracking-tight text-lg flex items-center gap-2 px-3 py-2 text-left text-Text-error hover:bg-red-50 rounded-lg transition-colors" onClick={() => {router.push("/login")}}>
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M15 17.625C14.9264 19.4769 13.3831 21.0494 11.3156 20.9988C10.8346 20.987 10.2401 20.8194 9.05112 20.484C6.18961 19.6768 3.70555 18.3203 3.10956 15.2815C3 14.723 3 14.0944 3 12.8373V11.1627C3 9.90561 3 9.27705 3.10956 8.71846C3.70555 5.67965 6.18961 4.32316 9.05112 3.51603C10.2401 3.18064 10.8346 3.01295 11.3156 3.00119C13.3831 2.95061 14.9264 4.52307 15 6.37501"
-                stroke="#B42121"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <path
-                d="M21 12H10M21 12C21 11.2998 19.0057 9.99153 18.5 9.5M21 12C21 12.7002 19.0057 14.0085 18.5 14.5"
-                stroke="#B42121"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Log Out
+         <button 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full font-medium leading-normal tracking-tight text-lg flex items-center gap-2 px-3 py-2 text-left text-Text-error hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoggingOut ? (
+              <>
+                <svg className="animate-spin h-5 w-5 text-Text-error" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Logging out...
+              </>
+            ) : (
+              <>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M15 17.625C14.9264 19.4769 13.3831 21.0494 11.3156 20.9988C10.8346 20.987 10.2401 20.8194 9.05112 20.484C6.18961 19.6768 3.70555 18.3203 3.10956 15.2815C3 14.723 3 14.0944 3 12.8373V11.1627C3 9.90561 3 9.27705 3.10956 8.71846C3.70555 5.67965 6.18961 4.32316 9.05112 3.51603C10.2401 3.18064 10.8346 3.01295 11.3156 3.00119C13.3831 2.95061 14.9264 4.52307 15 6.37501"
+                    stroke="#B42121"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M21 12H10M21 12C21 11.2998 19.0057 9.99153 18.5 9.5M21 12C21 12.7002 19.0057 14.0085 18.5 14.5"
+                    stroke="#B42121"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Log Out
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -1,54 +1,42 @@
-"use client";
-import React from "react";
-import { SVGProps } from "react"; // For icons, to support SVG type for better flexibility
+// In your Input component file (components/UI/Input.tsx)
+import React from 'react';
 
-interface InputProps {
+export interface InputProps {
   label: string;
-  placeholder: string;
-  type?: string;
+  type: string;
   name: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onclick?: React.MouseEventHandler<HTMLDivElement>;
+  placeholder?: string;
   required?: boolean;
-  min?: number;
   errorMessage?: string;
   icon?: React.ReactNode;
-  variant?: "default" | "outlined" | "filled"; // Variants for different styles
+  onclick?: () => void;
+  maxLength?: number; // Add this line
+  pattern?: string; // You might also want to add pattern
+  min?: number; // And min for number inputs
 }
 
 const Input: React.FC<InputProps> = ({
   label,
-  placeholder,
-  type = "text",
+  type,
   name,
   value,
   onChange,
-  onclick,
+  placeholder = "",
   required = false,
-  min,
   errorMessage,
   icon,
-  variant = "default", // Default variant
+  onclick,
+  maxLength, // Add this line
+  pattern, // Add this line
+  min, // Add this line
 }) => {
-  // Define the base classes
-  const baseClasses =
-    "w-full py-[14px] px-3 font-medium text-base focus:ring-2 focus:ring-primary outline-none transition-all bg-white rounded-lg focus:border-[#292929] placeholder:text-[#7C7C7C] placeholder:capitalize placeholder:text-[16px] tracking-wide";
-
-  // Define styles for when there is an error
-  const errorClasses = "border-[#B42121] text-[#3D3D3D] placeholder-[#7C7C7C] outline-none focus:ring-2 focus:ring-[#B42121]";
-
-  // Define styles for the variant types
-  const variantClasses = {
-    default: "bg-white shadow-[0px_3px_4px_0px_rgba(26,64,96,0.10)]",
-    outlined: "bg-white border border-primary rounded-lg",
-    filled: "bg-primary-100 text-black", // You can customize this to your preference
-  };
-
   return (
-    <div className="flex flex-col space-y-2">
-      <label className="self-stretch justify-center text-[#3d3d3d] text-lg font-medium capitalize leading-normal tracking-tight">
+    <div className="mb-4">
+      <label className="block mb-2 text-text-primary font-medium">
         {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       <div className="relative">
         <input
@@ -58,22 +46,28 @@ const Input: React.FC<InputProps> = ({
           onChange={onChange}
           placeholder={placeholder}
           required={required}
-          className={`${baseClasses} ${
-            errorMessage ? errorClasses : variantClasses[variant]
+          maxLength={maxLength} // Add this line
+          pattern={pattern} // Add this line
+          min={min} // Add this line
+          className={`w-full bg-white border ${
+            errorMessage ? 'border-red-500' : 'border-tertiary'
+          } text-Text-secondary rounded-lg p-3 font-bold focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all ${
+            icon ? 'pr-10' : ''
           }`}
-          min={min}
         />
         {icon && (
-          <div className="absolute right-3 top-[16px]" onClick={onclick}>
+          <button
+            type="button"
+            onClick={onclick}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
             {icon}
-          </div>
+          </button>
         )}
-        {/* Icon Position */}
       </div>
       {errorMessage && (
-        <span className="text-[#B42121] text-sm mt-1 font-medium">{errorMessage}</span>
+        <p className="text-red-500 text-sm mt-1">{errorMessage}</p>
       )}
-      {/* Error Message */}
     </div>
   );
 };

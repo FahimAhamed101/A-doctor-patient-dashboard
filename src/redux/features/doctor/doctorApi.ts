@@ -15,13 +15,14 @@ export interface Doctor {
   clinicName?: string
   officeLocation?: string[]
   popularReasonsToVisit?: string[]
-  qualifications?: string[]
+  qualifications?: Array<{ [key: string]: string }> | string[]
   status?: string
   googleMapUrl?: string[]
   role?: string
   createdAt?: string
   updatedAt?: string
   __v?: number
+  
 }
 
 // API Response interfaces
@@ -39,27 +40,21 @@ export interface FavoriteResponse {
   data?: Doctor
 }
 
-// Helper function to get token safely
-const getToken = (): string | null => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem("accessToken");
-  }
-  return null;
-};
-
 export const doctorApi = createApi({
   reducerPath: 'doctorApi',
   baseQuery: fetchBaseQuery({
-     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
-     prepareHeaders: (headers) => {
-       const token = getToken();
-       if (token) {
-         headers.set('Authorization', `Bearer ${token}`);
-       }
-       headers.set('Content-Type', 'application/json');
-       return headers;
-     },
-   }),
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    prepareHeaders: (headers) => {
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
+      }
+      headers.set('Content-Type', 'application/json');
+      return headers;
+    },
+  }),
   tagTypes: ['Doctor'],
   endpoints: (builder) => ({
     getDoctors: builder.query<Doctor[], void>({
@@ -70,10 +65,13 @@ export const doctorApi = createApi({
       providesTags: ['Doctor'],
     }),
 
-    // Add this endpoint to get single doctor by ID
-    getDoctorById: builder.query<DoctorResponse, string>({
+      // Fix this endpoint - it should return Doctor directly
+    getDoctorById: builder.query<Doctor, string>({
       query: (doctorId) => `/api/user/doctors/${doctorId}`,
-      providesTags: ['Doctor'],
+      transformResponse: (response: DoctorResponse): Doctor => {
+        return response.data;
+      },
+      providesTags: (result, error, id) => [{ type: 'Doctor', id }],
     }),
     
     // Add to favorites
@@ -90,7 +88,7 @@ export const doctorApi = createApi({
     removeFromFavorites: builder.mutation<FavoriteResponse, { doctorId: string }>({
       query: ({ doctorId }) => ({
         url: '/api/user/favorites',
-        method: 'POST',
+          method: 'POST',
         body: { doctorId },
       }),
       invalidatesTags: ['Doctor'],
@@ -102,13 +100,13 @@ export const doctorApi = createApi({
         if (isFavorite) {
           return {
             url: '/api/user/favorites',
-            method: 'DELETE',
+            method: 'POST',
             body: { doctorId },
           }
         }
         return {
           url: '/api/user/favorites',
-          method: 'POST',
+                 method: 'POST',
           body: { doctorId },
         }
       },
@@ -133,4 +131,4 @@ export const {
   useAddToFavoritesMutation,
   useRemoveFromFavoritesMutation,
   useGetFavoritesQuery 
-} = doctorApi
+} = doctorApi;

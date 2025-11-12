@@ -1,65 +1,128 @@
-// app/appointment/reschedule/page.tsx
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRescheduleAppointmentMutation, useGetMyAppointmentsQuery } from "@/redux/features/appointments/appointmentsApi";
-import { useSearchParams } from 'next/navigation';
-export default function RescheduleAppointment() {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+interface WaitlistPopupProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onJoinWaitlist: (option: string) => void;
+  onCancel?: () => void;
+}
+
+const WaitlistPopup: React.FC<WaitlistPopupProps> = ({
+  isOpen,
+  onClose,
+  onJoinWaitlist,
+  onCancel
+}) => {
+  const [selectedOption, setSelectedOption] = useState('next-available');
+  const router = useRouter();
+  
+  if (!isOpen) return null;
+
+  const handleJoinWaitlist = () => {
+    onJoinWaitlist(selectedOption);
+    onClose();
+    router.push('/waitlist');
+  };
+
+  return (
+    <div className="fixed inset-0 bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+        {/* Header with alarm clock icon */}
+        <div className="mb-6">
+          <div className="mx-auto rounded-full flex items-center justify-center mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 22C16.9706 22 21 17.9706 21 13C21 8.02944 16.9706 4 12 4C7.02944 4 3 8.02944 3 13C3 17.9706 7.02944 22 12 22Z" stroke="#2B4DCA" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M5 19L3 21M19 19L21 21" stroke="#2B4DCA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M19 3.5697L19.5955 3.27195C20.4408 2.84932 20.7583 2.89769 21.4303 3.5697C22.1023 4.2417 22.1507 4.55924 21.728 5.4045L21.4303 6M5 3.5697L4.4045 3.27195C3.55924 2.84932 3.2417 2.89769 2.5697 3.5697C1.89769 4.2417 1.84932 4.55924 2.27195 5.4045L2.5697 6" stroke="#2B4DCA" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M12 9.5V13.5L14 15.5" stroke="#2B4DCA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M12 3.5V2" stroke="#2B4DCA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 2H14" stroke="#2B4DCA" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <h3 className="text-lg p-2 font-semibold text-gray-900 text-center ">Waitlist</h3>
+          </div>
+         
+          <p className="text-sm text-gray-600 text-center leading-relaxed">
+            Get notified if an earlier<br />appointment becomes available.
+          </p>
+        </div>
+
+        {/* Radio Options */}
+        <div className="space-y-4 mb-6">
+          <label className="flex items-start cursor-pointer">
+            <div className="flex items-center h-5">
+              <input
+                type="radio"
+                name="waitlist-option"
+                value="next-available"
+                checked={selectedOption === 'next-available'}
+                onChange={(e) => setSelectedOption(e.target.value)}
+                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2"
+              />
+            </div>
+            <div className="ml-3 flex-1">
+              <div className="text-sm font-medium text-gray-900 mb-1">Next available</div>
+              <div className="text-xs text-gray-500 leading-tight">
+                We'll alert you as soon as a new<br />slot opens up.
+              </div>
+            </div>
+          </label>
+
+          <label className="flex items-start cursor-pointer">
+            <div className="flex items-center h-5">
+              <input
+                type="radio"
+                name="waitlist-option"
+                value="this-day"
+                checked={selectedOption === 'this-day'}
+                onChange={(e) => setSelectedOption(e.target.value)}
+                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2"
+              />
+            </div>
+            <div className="ml-3 flex-1">
+              <div className="text-sm font-medium text-gray-900 mb-1">This day</div>
+              <div className="text-xs text-gray-500">Jun 4, 2025</div>
+            </div>
+          </label>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col space-y-3">
+          <button
+            onClick={handleJoinWaitlist}
+            className="w-full text-[#2E8BC9] border-t border-[#DCDCDC] font-semibold py-3 px-6 transition-colors duration-200"
+          >
+            Join Waitlist
+          </button>
+          <button
+            onClick={onCancel || onClose}
+            className="w-full text-[#B42121] border-t border-[#DCDCDC] font-semibold py-3 px-6 transition-colors duration-200"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function DoctorAppointmentBooking() {
+  const [selectedDate, setSelectedDate] = useState(4);
   const [selectedTime, setSelectedTime] = useState("2:15 PM");
   const [isFavorite, setIsFavorite] = useState(false);
-  const [appointmentData, setAppointmentData] = useState<any>(null);
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showWaitlistPopup, setShowWaitlistPopup] = useState(false);
   
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const appointmentId = searchParams.get('id');
-
-  const { data: appointmentsData } = useGetMyAppointmentsQuery();
-  const [rescheduleAppointment, { isLoading }] = useRescheduleAppointmentMutation();
-
-  useEffect(() => {
-    if (appointmentId && appointmentsData) {
-      const appointment = appointmentsData.find(app => app._id === appointmentId);
-      if (appointment) {
-        setAppointmentData(appointment);
-        // Set initial selected date to current date or next available date
-        const today = new Date();
-        setSelectedDate(today);
-      }
-    }
-  }, [appointmentId, appointmentsData]);
-
   const toggleFavorite = () => {
     setIsFavorite(!isFavorite);
   };
 
-  // Calendar configuration - dynamic based on current month
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  };
+  // Get the first day of the month (0 = Sunday, 1 = Monday, etc.)
+  const firstDayOfMonth = 0; // February 2025 starts on a Sunday
+  const daysInMonth = 28; // February 2025 has 28 days
 
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  };
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentMonth(prev => {
-      const newMonth = new Date(prev);
-      if (direction === 'prev') {
-        newMonth.setMonth(prev.getMonth() - 1);
-      } else {
-        newMonth.setMonth(prev.getMonth() + 1);
-      }
-      return newMonth;
-    });
-  };
-
-  // Generate calendar data
-  const daysInMonth = getDaysInMonth(currentMonth);
-  const firstDayOfMonth = getFirstDayOfMonth(currentMonth);
-  
   // Generate empty cells for days before the first day of the month
   const emptyCells = [];
   for (let i = 0; i < firstDayOfMonth; i++) {
@@ -68,27 +131,14 @@ export default function RescheduleAppointment() {
 
   // Generate cells for the days of the month
   const dayCells = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time for comparison
-
   for (let i = 1; i <= daysInMonth; i++) {
-    const cellDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i);
-    const isPastDate = cellDate < today;
-    const isSelected = selectedDate && 
-      cellDate.getDate() === selectedDate.getDate() &&
-      cellDate.getMonth() === selectedDate.getMonth() &&
-      cellDate.getFullYear() === selectedDate.getFullYear();
-
     dayCells.push(
       <button 
         key={i} 
-        onClick={() => !isPastDate && setSelectedDate(cellDate)}
-        disabled={isPastDate}
+        onClick={() => setSelectedDate(i)}
         className={`w-16 h-8 rounded-sm text-sm font-medium transition-colors ${
-          isSelected 
+          i === selectedDate 
             ? 'bg-[#2E8BC9] text-white' 
-            : isPastDate
-            ? 'text-gray-300 cursor-not-allowed'
             : 'text-gray-700 hover:bg-gray-100'
         }`}
       >
@@ -105,77 +155,17 @@ export default function RescheduleAppointment() {
   for (let i = 0; i < allCells.length; i += 7) {
     rows.push(allCells.slice(i, i + 7));
   }
-
-  // Handle reschedule submission with proper date validation
-  const handleReschedule = async () => {
-    if (!appointmentId) {
-      alert("No appointment selected for rescheduling");
-      return;
-    }
-
-    if (!selectedDate) {
-      alert("Please select a date");
-      return;
-    }
-
-    try {
-      // Parse the selected time and combine with selected date
-      const [time, modifier] = selectedTime.split(' ');
-      let [hours, minutes] = time.split(':').map(Number);
-      
-      // Convert to 24-hour format
-      if (modifier === 'PM' && hours !== 12) {
-        hours += 12;
-      }
-      if (modifier === 'AM' && hours === 12) {
-        hours = 0;
-      }
-
-      // Create new date with selected date and time
-      const newDateTime = new Date(selectedDate);
-      newDateTime.setHours(hours, minutes, 0, 0);
-
-      // Validate that the new date/time is in the future
-      const now = new Date();
-      if (newDateTime <= now) {
-        alert("Please select a future date and time");
-        return;
-      }
-
-      await rescheduleAppointment({
-        appointmentId,
-        newDateTime: newDateTime.toISOString()
-      }).unwrap();
-
-      alert("Appointment rescheduled successfully!");
-      router.push("/appointment");
-    } catch (error: any) {
-      console.error("Failed to reschedule appointment:", error);
-      if (error?.data?.message) {
-        alert(`Failed to reschedule: ${error.data.message}`);
-      } else {
-        alert("Failed to reschedule appointment. Please try again.");
-      }
-    }
+  
+  const handleJoinWaitlist = (option: string) => {
+    console.log(`User joined waitlist with option: ${option}`);
+    // Add your waitlist logic here
   };
 
-  // Format month and year for display
-  const monthYear = currentMonth.toLocaleDateString('en-US', { 
-    month: 'long', 
-    year: 'numeric' 
-  });
-
-  if (!appointmentData) {
-    return (
-      <div className="max-w-2/4 mx-auto bg-gray-50 p-4 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading appointment details...</p>
-        </div>
-      </div>
-    );
-  }
-
+  const handleWaitlistCancel = () => {
+    console.log('User cancelled waitlist');
+    setShowWaitlistPopup(false);
+  };
+  
   return (
     <div className="max-w-2/4 mx-auto bg-gray-50 p-4">
       {/* Doctor Profile Section */}
@@ -212,7 +202,7 @@ export default function RescheduleAppointment() {
           {/* Doctor Info */}
           <div className="flex-1 bg-white pt-3">
             <div className="flex justify-between items-center">
-              <h1 className="text-2xl text-[#3D3D3D]">Dr. {appointmentData.doctorId.fullName}</h1>
+              <h1 className="text-2xl text-[#3D3D3D]">Dr. Moule Marrk</h1>
               <div className="flex items-center p-1">
                 <svg width="48" height="49" viewBox="0 0 48 49" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g filter="url(#filter0_d_965_18190)">
@@ -255,7 +245,7 @@ export default function RescheduleAppointment() {
               </div>
             </div>
             
-            <p className="text-[#7C7C7C] text-sm mb-4">{appointmentData.doctorId.discipline}</p>
+            <p className="text-[#7C7C7C] text-sm mb-4">Cardiology</p>
             <div className="flex items-start gap-1 mb-2">
               <span className="text-blue-500">
                 <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -276,21 +266,15 @@ export default function RescheduleAppointment() {
         {/* Date Selection Section */}
         <div className="mt-6 pt-6 border-t border-gray-100">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Select new date and time</h2>
+            <h2 className="text-lg font-semibold text-gray-800">Select your date</h2>
             <div className="flex items-center gap-2 text-gray-500">
-              <button 
-                onClick={() => navigateMonth('prev')}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
+              <button className="p-1 hover:bg-gray-100 rounded">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
               </button>
-              <span className="text-sm">{monthYear}</span>
-              <button 
-                onClick={() => navigateMonth('next')}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
+              <span className="text-sm">Feb 2025</span>
+              <button className="p-1 hover:bg-gray-100 rounded">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -320,8 +304,9 @@ export default function RescheduleAppointment() {
             <h3 className="text-md font-semibold text-gray-800 mb-3 mt-6">Available Time Slots</h3>
             <div className="grid grid-cols-6 gap-3 mb-6">
               {[
-                "11:45 AM", "2:15 PM", "4:30 PM",
-                "6:20 PM", "10:05 PM", "7:00 PM"
+                "11:45 AM", "2:15 PM", "4:30 AM",
+                "6:20 PM", "10:05 PM", "10:05 PM",
+                "7:00 PM", "1:55 AM"
               ].map((time, index) => (
                 <button
                   key={index}
@@ -339,50 +324,38 @@ export default function RescheduleAppointment() {
                 </button>
               ))}
             </div>
-
-            {/* Selected Date Display */}
-            {selectedDate && (
-              <div className="mb-4 p-3 bg-blue-50 rounded-md">
-                <p className="text-sm text-blue-700">
-                  Selected: {selectedDate.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })} at {selectedTime}
-                </p>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex gap-3 mt-4">
-          <button 
-            onClick={() => router.back()}
-            className="flex-1 py-3 px-4 bg-white border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
-          >
-            Cancel
+          <button onClick={() => setShowWaitlistPopup(true)} className="flex-1 gap-2 py-3 px-4 bg-white shadow-md text-[#2E8BC9] rounded-xl font-medium flex items-center justify-center hover:bg-blue-50 transition-colors">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 22C16.9706 22 21 17.9706 21 13C21 8.02944 16.9706 4 12 4C7.02944 4 3 8.02944 3 13C3 17.9706 7.02944 22 12 22Z" stroke="#2E8BC9" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M5 19L3 21M19 19L21 21" stroke="#2E8BC9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M19 3.5697L19.5955 3.27195C20.4408 2.84932 20.7583 2.89769 21.4303 3.5697C22.1023 4.2417 22.1507 4.55924 21.728 5.4045L21.4303 6M5 3.5697L4.4045 3.27195C3.55924 2.84932 3.2417 2.89769 2.5697 3.5697C1.89769 4.2417 1.84932 4.55924 2.27195 5.4045L2.5697 6" stroke="#2E8BC9" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M12 9.5V13.5L14 15.5" stroke="#2E8BC9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M12 3.5V2" stroke="#2E8BC9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 2H14" stroke="#2E8BC9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Waitlist
           </button>
          
-          <button 
-            onClick={handleReschedule}
-            disabled={isLoading || !selectedDate}
-            className="flex-1 py-3 px-4 gap-2 bg-[#2E8BC9] text-white rounded-xl font-medium flex items-center justify-center hover:bg-blue-600 transition-colors disabled:opacity-50"
-          >
-            {isLoading ? (
-              "Rescheduling..."
-            ) : (
-              <>
-                <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M17.4767 19.5C19.9017 17.8876 21.5 15.1305 21.5 12C21.5 7.02944 17.4706 3 12.5 3C11.8126 3 11.1432 3.07706 10.5 3.22302M17.4767 19.5V16M17.4767 19.5H21M7.5 4.51555C5.08803 6.13007 3.5 8.87958 3.5 12C3.5 16.9706 7.52944 21 12.5 21C13.1874 21 13.8568 20.9229 14.5 20.777M7.5 4.51555V8M7.5 4.51555H4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Confirm Reschedule
-              </>
-            )}
+          <button className="flex-1 py-3 px-4 gap-2 bg-[#2E8BC9] text-white rounded-xl font-medium flex items-center justify-center hover:bg-blue-600 transition-colors">
+            <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.4767 19.5C19.9017 17.8876 21.5 15.1305 21.5 12C21.5 7.02944 17.4706 3 12.5 3C11.8126 3 11.1432 3.07706 10.5 3.22302M17.4767 19.5V16M17.4767 19.5H21M7.5 4.51555C5.08803 6.13007 3.5 8.87958 3.5 12C3.5 16.9706 7.52944 21 12.5 21C13.1874 21 13.8568 20.9229 14.5 20.777M7.5 4.51555V8M7.5 4.51555H4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <Link href="/doctor/book-report">Done Reschedule</Link>
           </button>
         </div>
       </div>
+      
+      <WaitlistPopup
+        isOpen={showWaitlistPopup}
+        onClose={() => setShowWaitlistPopup(false)}
+        onJoinWaitlist={handleJoinWaitlist}
+        onCancel={handleWaitlistCancel}
+      />
     </div>
   );
 }

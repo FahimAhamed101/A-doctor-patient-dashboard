@@ -1,3 +1,4 @@
+// waitlistApi.ts - Updated with join endpoint
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export interface WaitlistItem {
@@ -16,7 +17,19 @@ export interface WaitlistItem {
   __v: number;
 }
 
+export interface JoinWaitlistRequest {
+  doctorId: string;
+  preference: 'next_available' | 'specific_date';
+  specificDate?: string; // Only for specific_date preference
+}
+
 export interface RemoveWaitlistResponse {
+  success: boolean;
+  message: string;
+  data: WaitlistItem;
+}
+
+export interface JoinWaitlistResponse {
   success: boolean;
   message: string;
   data: WaitlistItem;
@@ -27,9 +40,11 @@ export const waitlistApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/waitlist`,
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
       }
       return headers;
     },
@@ -39,6 +54,14 @@ export const waitlistApi = createApi({
     getMyWaitlist: builder.query<WaitlistItem[], void>({
       query: () => '/my',
       providesTags: ['Waitlist'],
+    }),
+    joinWaitlist: builder.mutation<JoinWaitlistResponse, JoinWaitlistRequest>({
+      query: (waitlistData) => ({
+        url: '/join',
+        method: 'POST',
+        body: waitlistData,
+      }),
+      invalidatesTags: ['Waitlist'],
     }),
     removeFromWaitlist: builder.mutation<RemoveWaitlistResponse, string>({
       query: (waitlistId) => ({
@@ -52,5 +75,6 @@ export const waitlistApi = createApi({
 
 export const { 
   useGetMyWaitlistQuery, 
+  useJoinWaitlistMutation,
   useRemoveFromWaitlistMutation 
 } = waitlistApi;

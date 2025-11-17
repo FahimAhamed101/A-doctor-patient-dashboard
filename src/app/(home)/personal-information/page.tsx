@@ -4,49 +4,34 @@ import { useGetProfileQuery, useUpdatePatientProfileMutation } from '@/redux/fea
 
 interface PatientData {
   data: {
-    attributes: {
-      user: {
-        id: string;
-        userName: string;
-        firstName: string;
-        lastName: string;
-        fullName: string;
-        email: string;
-        profileImage: string;
-        dateOfBirth: string | null;
-        gender: string;
-        callingCode: string;
-        phoneNumber: string;
-        address: string;
-        height: { value: string | null; unit: string };
-        weight: { value: string | null; unit: string };
-        medicalCondition: string[];
-        role: string;
-        isProfileCompleted: boolean;
-        chartCredits: number;
-        appointmentCredits: number;
-        createdAt: string;
-        subscription: {
-          subscriptionExpirationDate: string | null;
-          status: string;
-          isSubscriptionTaken: boolean;
-        };
-      };
-      securitySettings: {
-        recoveryEmail: string | null;
-        recoveryPhone: string | null;
-        securityQuestion: string | null;
-      };
-      documents: Array<{
-        user: string;
-        title: string;
-        description: string;
-        type: string;
-        files: string[];
-        createdAt: string;
-        id: string;
-      }>;
+    fullName: {
+      first: string;
+      middle: string;
+      last: string;
     };
+    driversLicense: {
+      licenseNumber: string;
+      frontImage: string;
+      backImage: string;
+    };
+    dob: string;
+    sex: string;
+    maritalStatus: string;
+    bloodGroup: string;
+    numberOfChildren: number;
+    email: string;
+    phone: string;
+    address: {
+      line1: string;
+      line2: string;
+      city: string;
+      state: string;
+      zip: string;
+      _id: string;
+    };
+    employer: string;
+    last4SSN: string;
+    _id: string;
   };
 }
 
@@ -82,67 +67,47 @@ export default function PatientInformationForm() {
 
   // Transform API data to form data when profile loads
   useEffect(() => {
-    if (profileData?.data?.attributes?.user) {
-      const userData = profileData.data.attributes.user;
+    if (profileData?.data) {
+      const patientData = profileData.data;
       
-      // Parse fullName from the fullName string or use firstName/lastName
-      const parseFullName = (fullName: string) => {
-        const nameParts = fullName.split(' ');
-        return {
-          first: nameParts[0] || '',
-          middle: nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '',
-          last: nameParts.length > 1 ? nameParts[nameParts.length - 1] : ''
-        };
-      };
-
-      const nameParts = parseFullName(userData.fullName);
-
-      // Parse address if it exists
-      let addressLine1 = '';
-      let city = '';
-      let state = 'ca';
-      let zipCode = '';
-
-      if (userData.address) {
-        try {
-          // Try to parse address as JSON, otherwise use as string
-          const addressObj = typeof userData.address === 'string' 
-            ? JSON.parse(userData.address) 
-            : userData.address;
-          addressLine1 = addressObj.line1 || addressObj.addressLine1 || '';
-          city = addressObj.city || '';
-          state = addressObj.state || 'ca';
-          zipCode = addressObj.zip || addressObj.zipCode || '';
-        } catch {
-          // If parsing fails, use the address as is
-          addressLine1 = userData.address;
-        }
-      }
+      console.log('Profile Data:', patientData);
 
       setFormData(prev => ({
         ...prev,
-        firstName: nameParts.first || userData.firstName || '',
-        middleName: nameParts.middle || '',
-        lastName: nameParts.last || userData.lastName || '',
-        dob: userData.dateOfBirth ? new Date(userData.dateOfBirth).toISOString().split('T')[0] : '',
-        sex: userData.gender || 'Male',
-        maritalStatus: 'Single', // Default since not in API
-        bloodGroup: 'a-positive', // Default since not in API
-        numChildren: '0', // Default since not in API
-        email: userData.email || '',
-        phone: userData.phoneNumber || '',
-        addressLine1: addressLine1,
-        addressLine2: '', // Default since not in API
-        city: city,
-        state: state.toLowerCase() || 'ca',
-        zipCode: zipCode,
-        employer: '', // Default since not in API
-        driverLicense: '', // Default since not in API
-        tin: '', // Default since not in API
+        firstName: patientData.fullName?.first || '',
+        middleName: patientData.fullName?.middle || '',
+        lastName: patientData.fullName?.last || '',
+        dob: patientData.dob ? new Date(patientData.dob).toISOString().split('T')[0] : '',
+        sex: patientData.sex || 'Male',
+        maritalStatus: patientData.maritalStatus || 'Single',
+        bloodGroup: patientData.bloodGroup || 'A+',
+        numChildren: patientData.numberOfChildren?.toString() || '0',
+        email: patientData.email || '',
+        phone: patientData.phone || '',
+        addressLine1: patientData.address?.line1 || '',
+        addressLine2: patientData.address?.line2 || '',
+        city: patientData.address?.city || '',
+        state: patientData.address?.state || 'ca',
+        zipCode: patientData.address?.zip || '',
+        employer: patientData.employer || '',
+        driverLicense: patientData.driversLicense?.licenseNumber || '',
+        tin: patientData.last4SSN || '',
       }));
 
-      // Note: Image previews would need to be handled differently since 
-      // driversLicense data is not in the current API response structure
+      // Set image previews if images exist in the API response
+      if (patientData.driversLicense?.frontImage) {
+        const frontImageUrl = patientData.driversLicense.frontImage.startsWith('http') 
+          ? patientData.driversLicense.frontImage 
+          : `${process.env.NEXT_PUBLIC_API_BASE_URL}/${patientData.driversLicense.frontImage}`;
+        setFrontImagePreview(frontImageUrl);
+      }
+      
+      if (patientData.driversLicense?.backImage) {
+        const backImageUrl = patientData.driversLicense.backImage.startsWith('http')
+          ? patientData.driversLicense.backImage
+          : `${process.env.NEXT_PUBLIC_API_BASE_URL}/${patientData.driversLicense.backImage}`;
+        setBackImagePreview(backImageUrl);
+      }
     }
   }, [profileData]);
 
@@ -190,11 +155,48 @@ export default function PatientInformationForm() {
     e.preventDefault();
     
     try {
-      await updatePatientProfile(formData).unwrap();
+      // Convert numChildren to number and validate
+      const numberOfChildren = parseInt(formData.numChildren);
+      if (isNaN(numberOfChildren) || numberOfChildren < 0) {
+        alert('Please enter a valid number for children');
+        return;
+      }
+
+      // Prepare data according to the UpdatePatientProfileRequest interface
+      const submitData = {
+        firstName: formData.firstName,
+        middleName: formData.middleName,
+        lastName: formData.lastName,
+        dob: formData.dob,
+        sex: formData.sex,
+        maritalStatus: formData.maritalStatus,
+        bloodGroup: formData.bloodGroup,
+        numChildren: formData.numChildren,
+        email: formData.email,
+        phone: formData.phone,
+        addressLine1: formData.addressLine1,
+        addressLine2: formData.addressLine2,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+        employer: formData.employer,
+        driverLicense: formData.driverLicense,
+        tin: formData.tin,
+        licenseFrontImage: formData.licenseFrontImage,
+        licenseBackImage: formData.licenseBackImage,
+      };
+
+      console.log('Submitting data:', submitData);
+
+      await updatePatientProfile(submitData).unwrap();
       alert('Profile updated successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to update profile:', error);
-      alert('Failed to update profile. Please try again.');
+      if (error.data?.message) {
+        alert(`Failed to update profile: ${error.data.message}`);
+      } else {
+        alert('Failed to update profile. Please try again.');
+      }
     }
   };
 
@@ -328,14 +330,14 @@ export default function PatientInformationForm() {
             value={formData.bloodGroup}
             onChange={handleChange}
           >
-            <option value="o-positive">O+</option>
-            <option value="o-negative">O-</option>
-            <option value="a-positive">A+</option>
-            <option value="a-negative">A-</option>
-            <option value="b-positive">B+</option>
-            <option value="b-negative">B-</option>
-            <option value="ab-positive">AB+</option>
-            <option value="ab-negative">AB-</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
           </select>
         </div>
 
@@ -436,6 +438,7 @@ export default function PatientInformationForm() {
               <option value="ny">New York</option>
               <option value="tx">Texas</option>
               <option value="de">Delaware</option>
+              <option value="il">Illinois</option>
             </select>
           </div>
           <div className="grid gap-2">

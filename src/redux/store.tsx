@@ -9,9 +9,10 @@ import { insuranceApi } from './features/insurance/insuranceApi';
 import { waitlistApi } from './features/waitlist/waitlistApi';
 import { medicationsApi } from './features/medications/medicationsApi';
 import { doctorApi } from './features/doctor/doctorApi';
+import { documentApi } from './features/document/documentApi';
 export const store = configureStore({
   reducer: {
-    [authApi.reducerPath]: authApi.reducer,[onboardingApi.reducerPath]: onboardingApi.reducer,
+    [authApi.reducerPath]: authApi.reducer,[onboardingApi.reducerPath]: onboardingApi.reducer, [documentApi.reducerPath]: documentApi.reducer,
     [appointmentsApi.reducerPath]: appointmentsApi.reducer,[medicationsApi.reducerPath]: medicationsApi.reducer, [doctorApi.reducerPath]: doctorApi.reducer,
     [medicalApi.reducerPath]: medicalApi.reducer,[insuranceApi.reducerPath]: insuranceApi.reducer, [waitlistApi.reducerPath]: waitlistApi.reducer,
     auth: authReducer,
@@ -19,7 +20,7 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
-      authApi.middleware,onboardingApi.middleware,appointmentsApi.middleware,medicalApi.middleware,insuranceApi.middleware,waitlistApi.middleware,medicationsApi.middleware,doctorApi.middleware
+      authApi.middleware,onboardingApi.middleware,documentApi.middleware,appointmentsApi.middleware,medicalApi.middleware,insuranceApi.middleware,waitlistApi.middleware,medicationsApi.middleware,doctorApi.middleware
     
       
     )

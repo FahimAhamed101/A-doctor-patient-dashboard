@@ -39,21 +39,7 @@ interface UpdatePatientProfileResponse {
   data: UserProfileResponse['data'];
 }
 
-interface TeamMemberDetailsResponse {
-  code: number;
-  message: string;
-  data: {
-    attributes: {
-      team: TeamMember;
-      scheduleList: Array<{
-        dayOfWeek: string;
-        startTime: string;
-        endTime: string;
-        timezone: string;
-      }>;
-    };
-  };
-}
+
 
 // In your authApi file, update the LoginResponse interface:
 interface LoginResponse {
@@ -109,6 +95,18 @@ interface UserProfileResponse {
   code: number;
   message: string;
   data: {
+    driversLicense: any;
+    last4SSN: string;
+    employer: string;
+    address: any;
+    phone: string;
+    email: string;
+    numberOfChildren: any;
+    maritalStatus: string;
+    bloodGroup: string;
+    sex: string;
+    dob: string | number | Date;
+    fullName: any;
     attributes: {
       user: {
         id: string;
@@ -178,6 +176,7 @@ interface Doctor {
 }
 
 interface DoctorsResponse {
+  doctors: any;
   data: Doctor[];
 }
 
@@ -207,7 +206,7 @@ interface ForgotPasswordRequest {
 
 interface VerifyEmailRequest {
   email: string;
-  code: string;
+  otp: string;
 }
 
 interface VerifyEmailResponse {
@@ -283,33 +282,7 @@ interface TeamMember {
   };
 }
 
-interface ContactRequest {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-  message: string;
-}
 
-interface ContactResponse {
-  code: number;
-  message: string;
-}
-
-interface TeamMembersResponse {
-  code: number;
-  message: string;
-  data: {
-    attributes: {
-      results: TeamMember[];
-      page: number;
-      limit: number;
-      totalPages: number;
-      totalResults: number;
-    };
-  };
-}
 
 interface FaqItem {
   id: string;
@@ -318,65 +291,8 @@ interface FaqItem {
   createdAt?: string;
 }
 
-interface FaqResponse {
-  code: number;
-  message: string;
-  data: {
-    attributes: {
-      results: FaqItem[];
-      page: number;
-      limit: number;
-      totalPages: number;
-      totalResults: number;
-    };
-  };
-}
 
-interface ChatBotRequest {
-  model: string;
-  prompt: string;
-}
 
-interface ChatBotResponse {
-  code: number;
-  message: string;
-  data: {
-    attributes: {
-      candidates: Array<{
-        content: {
-          parts: Array<{
-            text: string;
-          }>;
-          role: string;
-        };
-        finishReason: string;
-        citationMetadata?: {
-          citationSources: Array<{
-            startIndex: number;
-            endIndex: number;
-            uri: string;
-          }>;
-        };
-        avgLogprobs?: number;
-      }>;
-      usageMetadata: {
-        promptTokenCount: number;
-        candidatesTokenCount: number;
-        totalTokenCount: number;
-        promptTokensDetails: Array<{
-          modality: string;
-          tokenCount: number;
-        }>;
-        candidatesTokensDetails: Array<{
-          modality: string;
-          tokenCount: number;
-        }>;
-      };
-      modelVersion: string;
-      responseId: string;
-    };
-  };
-}
 
 interface ChangePasswordRequest {
   oldPassword: string;
@@ -549,7 +465,7 @@ export const authApi = createApi({
     }),
     verifyEmail: builder.mutation<VerifyEmailResponse, VerifyEmailRequest>({
       query: (credentials) => ({
-        url: "/api/auth/verify-email",
+        url: "/api/auth/verify-signup-otp",
         method: "POST",
         body: credentials,
       }),

@@ -100,7 +100,7 @@ const VerifyCodeContent = () => {
     try {
       const result = await verifyEmail({
         email: email,
-        code: otpCode,
+        otp: otpCode,
       }).unwrap();
 
       console.log("Email verification successful:", result);

@@ -2,18 +2,21 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export interface Appointment {
+  insurance: string;
   _id: string;
   patientId: string;
   doctorId: {
     _id: string;
     fullName: string;
     discipline: string;
+    profilePicture?: string;
     officeLocation?: string[];
+    clinicName?: string;
   };
   dateTime: string;
   visitReason: string;
   visitType: string;
-  insurance: string;
+  insuranceId?: string;
   symptoms: string[];
   summary: string;
   documents: Array<{
@@ -33,6 +36,29 @@ export interface Appointment {
   updatedAt: string;
   checkInTime?: string;
 }
+
+export interface BookAppointmentRequest {
+  doctorId: string;
+  dateTime: string;
+  visitReason: string;
+  visitType: string;
+  insuranceId?: string;
+  symptoms: string[];
+  summary: string;
+  documents: File[];
+  currentMedications: Array<{
+    name: string;
+    dosage: string;
+  }>;
+  priorDiagnoses: string[];
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
 
 export const appointmentsApi = createApi({
   reducerPath: 'appointmentsApi',
@@ -82,13 +108,28 @@ export const appointmentsApi = createApi({
       }),
       invalidatesTags: ['Appointments'],
     }),
+        bookAppointment: builder.mutation<ApiResponse<Appointment>, FormData>({
+      query: (formData) => ({
+        url: '/book',
+        method: 'POST',
+       body: formData,
+      }),
+    
+    }),
+        confirmAppointment: builder.mutation<ApiResponse<Appointment>, string>({
+      query: (appointmentId) => ({
+        url: `/${appointmentId}/confirm`,
+        method: 'PUT',
+      }),
+      invalidatesTags: ['Appointments'],
+    }),
   }),
 });
 
-export const {
+export const { useBookAppointmentMutation,
   useGetMyAppointmentsQuery,
   useGetAppointmentDetailsQuery,
   useCancelAppointmentMutation,
-  useRescheduleAppointmentMutation,
+  useRescheduleAppointmentMutation,  useConfirmAppointmentMutation,
   useCheckInAppointmentMutation,
 } = appointmentsApi;

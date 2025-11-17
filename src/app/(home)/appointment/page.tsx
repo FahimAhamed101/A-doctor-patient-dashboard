@@ -163,7 +163,20 @@ export default function AppointmentDashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null)
   const [checkInSuccess, setCheckInSuccess] = useState<string | null>(null)
 
-  // Filter appointments based on active tab
+  // Calculate counts based on ALL appointments, not filtered ones
+  const appointmentCounts = {
+    upcoming: appointments?.filter(appointment => 
+      appointment.status === 'scheduled' || appointment.status === 'booked'
+    ).length || 0,
+    completed: appointments?.filter(appointment => 
+      appointment.status === 'completed'
+    ).length || 0,
+    canceled: appointments?.filter(appointment => 
+      appointment.status === 'cancelled' || appointment.status === 'no-show'
+    ).length || 0
+  }
+
+  // Filter appointments based on active tab (only for display, not for counts)
   const filteredAppointments = appointments?.filter(appointment => {
     switch (activeTab) {
       case 'upcoming':
@@ -246,9 +259,7 @@ export default function AppointmentDashboard() {
 
   // Check if appointment can be checked in (within 30 minutes of appointment time)
   const canCheckIn = (appointment: Appointment) => {
-    if (appointment.checkInTime) {
-      return false // Already checked in
-    }
+  
     
     const appointmentTime = new Date(appointment.dateTime)
     const now = new Date()
@@ -288,7 +299,7 @@ export default function AppointmentDashboard() {
               activeTab === "upcoming" ? "text-[#2E8BC9] border-b-2 border-[#2E8BC9]" : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            Upcoming ({filteredAppointments.filter(a => a.status === 'scheduled' || a.status === 'booked').length})
+            Upcoming ({appointmentCounts.upcoming})
           </button>
           <button
             onClick={() => setActiveTab("completed")}
@@ -296,7 +307,7 @@ export default function AppointmentDashboard() {
               activeTab === "completed" ? "text-[#2E8BC9] border-b-2 border-[#2E8BC9]" : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            Completed ({filteredAppointments.filter(a => a.status === 'completed').length})
+            Completed ({appointmentCounts.completed})
           </button>
           <button
             onClick={() => setActiveTab("canceled")}
@@ -304,7 +315,7 @@ export default function AppointmentDashboard() {
               activeTab === "canceled" ? "text-[#2E8BC9] border-b-2 border-[#2E8BC9]" : "text-gray-500 hover:text-gray-700"
             }`}
           >
-            Canceled ({filteredAppointments.filter(a => a.status === 'cancelled' || a.status === 'no-show').length})
+            Canceled ({appointmentCounts.canceled})
           </button>
         </div>
         
@@ -313,6 +324,7 @@ export default function AppointmentDashboard() {
             {activeTab === 'upcoming' && 'Upcoming Appointments'}
             {activeTab === 'completed' && 'Completed Appointments'}
             {activeTab === 'canceled' && 'Canceled Appointments'}
+            {activeTab === 'details' && 'Appointment Details'}
           </h1>
         </div>
    
@@ -393,20 +405,20 @@ export default function AppointmentDashboard() {
                    !selectedAppointmentData.checkInTime && (
                     <button 
                       onClick={() => handleCheckIn(selectedAppointmentData._id)}
-                      disabled={isCheckingIn || !canCheckIn(selectedAppointmentData)}
+                      disabled={isCheckingIn }
                       className={`flex items-center justify-center gap-1 shadow-md px-3 py-2 rounded-md text-sm transition-colors ${
-                        isCheckingIn || !canCheckIn(selectedAppointmentData)
+                        isCheckingIn 
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           : 'text-[#93531F] hover:bg-blue-50 bg-[#FBF7EB] hover:bg-[#F5EED9]'
                       }`}
                     >
                       <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M14.1177 21.367C13.6841 21.773 13.1044 22 12.5011 22C11.8978 22 11.3182 21.773 10.8845 21.367C6.91302 17.626 1.59076 13.4469 4.18627 7.37966C5.58963 4.09916 8.95834 2 12.5011 2C16.0439 2 19.4126 4.09916 20.816 7.37966C23.4082 13.4393 18.099 17.6389 14.1177 21.367Z" 
-                          stroke={isCheckingIn || !canCheckIn(selectedAppointmentData) ? "#9CA3AF" : "#93531F"} 
+                          stroke={isCheckingIn  ? "#9CA3AF" : "#93531F"} 
                           strokeWidth="1.5"
                         />
                         <path d="M9.5 11.8333C9.5 11.8333 10.375 11.8333 11.25 13.5C11.25 13.5 14.0294 9.33333 16.5 8.5" 
-                          stroke={isCheckingIn || !canCheckIn(selectedAppointmentData) ? "#9CA3AF" : "#93531F"} 
+                          stroke={isCheckingIn  ? "#9CA3AF" : "#93531F"} 
                           strokeWidth="1.5" 
                           strokeLinecap="round" 
                           strokeLinejoin="round"
@@ -414,7 +426,7 @@ export default function AppointmentDashboard() {
                       </svg>
                       <span>
                         {isCheckingIn ? 'Checking in...' : 
-                         !canCheckIn(selectedAppointmentData) ? 'Check-in available 30 mins before appointment' : 
+                           
                          'Check in'}
                       </span>
                     </button>

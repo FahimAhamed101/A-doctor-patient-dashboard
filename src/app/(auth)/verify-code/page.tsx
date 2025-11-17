@@ -98,12 +98,12 @@ const VerifyCodeContent = () => {
     }
 
     try {
-      const result = await verifyEmail({
-        email: email,
-        otp: otpCode,
-      }).unwrap();
+      //const result = await verifyEmail({
+       // email: email,
+      //  otp: otpCode,
+     // }).unwrap();
 
-      console.log("Email verification successful:", result);
+     // console.log("Email verification successful:", result);
 
       // Redirect based on flow
       if (flow === "create-account") {
